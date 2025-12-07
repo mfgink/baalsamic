@@ -1,50 +1,43 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Baalsamic V6.2</title>
-    
-    <link rel="stylesheet" href="https://pyscript.net/releases/2023.05.1/pyscript.css" />
-    <script defer src="https://pyscript.net/releases/2023.05.1/pyscript.js"></script>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width,initial-scale=1" />
+    <title>Baalsamic V6 — Pyodide</title>
 
+    <!-- Keep original styling but hide py-script -->
     <style>
         body { background: #0d0d0d; color: #ccc; font-family: monospace; padding: 20px; text-align: center; }
         h1 { color: #ff0055; letter-spacing: 2px; text-transform: uppercase; margin-bottom: 20px; }
-        
         .config-panel { background: #1a1a1a; padding: 15px; border: 1px solid #333; border-radius: 8px; margin-bottom: 20px; text-align: left; }
         .config-group { margin-bottom: 15px; }
         .config-label { color: #ff0055; font-weight: bold; display: block; margin-bottom: 5px; font-size: 0.8em; text-transform: uppercase; }
-        
         .radio-group { display: flex; gap: 10px; }
         .radio-option { flex: 1; position: relative; }
         .radio-option input { opacity: 0; position: absolute; width: 100%; height: 100%; cursor: pointer; }
         .radio-tile { display: flex; flex-direction: column; align-items: center; justify-content: center; background: #222; border: 1px solid #444; padding: 10px; border-radius: 4px; transition: 0.2s; }
         .radio-option input:checked + .radio-tile { background: #ff0055; color: white; border-color: #ff0055; }
-        
         .upload-container { margin-bottom: 20px; }
         input[type=file] { padding: 10px; background: #222; width: 100%; border: 1px solid #333; color: #eee; }
-        
         .btn-action { width: 100%; background: #00ffcc; color: black; border: none; padding: 15px; font-size: 1.2em; font-weight: bold; cursor: pointer; text-transform: uppercase; letter-spacing: 1px; margin-top: 10px; }
         .btn-secondary { background: #333; color: #ccc; width: 100%; padding: 10px; border: 1px solid #555; margin-top: 10px; cursor: pointer; }
-
-        #overlay { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.85); z-index: 999; display: none; flex-direction: column; align-items: center; justify-content: center; }
+        #overlay { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.85); z-index: 999; display: none; flex-direction: column; align-items: center; justify-content: center; color:#ff0055; }
         .loader { border: 4px solid #333; border-top: 4px solid #ff0055; border-radius: 50%; width: 40px; height: 40px; animation: spin 1s linear infinite; margin-bottom: 15px; }
         @keyframes spin { 0% { transform: rotate(0deg); } 100% { transform: rotate(360deg); } }
         #overlay-text { color: #ff0055; font-size: 1.2em; font-weight: bold; }
-        
         .gallery { display: flex; flex-direction: column; gap: 20px; margin-top: 30px; }
         .card { background: #1a1a1a; border: 1px solid #333; padding: 10px; text-align: left; }
         .card-header { display: flex; justify-content: space-between; color: #555; font-size: 0.8em; margin-bottom: 5px; }
         .card canvas { width: 100%; height: 100px; object-fit: cover; border: 1px solid #444; cursor: pointer; }
-
         #tuner-view { display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: #0d0d0d; z-index: 100; padding: 20px; overflow-y: auto; box-sizing: border-box; }
         .tuner-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px; border-bottom: 1px solid #333; padding-bottom: 10px; }
         .tuner-controls { background: #1a1a1a; padding: 15px; border-radius: 8px; margin-top: 20px; text-align: left; }
         input[type=range] { width: 100%; margin: 10px 0; accent-color: #00ffcc; }
-        
         video { display: none; }
-        py-script { display: none; }
+        /* debug panel */
+        #debug { position: fixed; right:10px; bottom:10px; background:#111; color:#9f9; padding:10px; border-radius:8px; max-width:320px; font-size:12px; z-index:1000; border:1px solid #333; overflow:auto; max-height:40vh;}
+        #debug h4{margin:0 0 6px 0;color:#0ff;}
+        #debug pre{white-space:pre-wrap; margin:0; font-family:monospace; font-size:11px;}
     </style>
 </head>
 <body>
@@ -52,66 +45,184 @@
     <div id="overlay"><div class="loader"></div><div id="overlay-text">STITCHING...</div></div>
 
     <div id="main-view">
-        <h1>BAALSAMIC V6.2</h1>
-        
+        <h1>BAALSAMIC V6</h1>
+
         <div class="config-panel">
             <div class="config-group">
                 <span class="config-label">Sampling Rate (FPS)</span>
                 <div class="radio-group">
-                    <div class="radio-option"><input type="radio" name="fps" value="15" checked py-click="save_config"><div class="radio-tile"><span>15</span></div></div>
-                    <div class="radio-option"><input type="radio" name="fps" value="30" py-click="save_config"><div class="radio-tile"><span>30</span></div></div>
-                    <div class="radio-option"><input type="radio" name="fps" value="60" py-click="save_config"><div class="radio-tile"><span>60</span></div></div>
+                    <div class="radio-option"><input type="radio" name="fps" value="15" checked><div class="radio-tile"><span>15</span></div></div>
+                    <div class="radio-option"><input type="radio" name="fps" value="30"><div class="radio-tile"><span>30</span></div></div>
+                    <div class="radio-option"><input type="radio" name="fps" value="60"><div class="radio-tile"><span>60</span></div></div>
                 </div>
             </div>
             <div class="config-group">
                 <span class="config-label">Resolution</span>
                 <div class="radio-group">
-                    <div class="radio-option"><input type="radio" name="res" value="720" py-click="save_config"><div class="radio-tile"><span>SD</span></div></div>
-                    <div class="radio-option"><input type="radio" name="res" value="1080" py-click="save_config"><div class="radio-tile"><span>HD</span></div></div>
-                    <div class="radio-option"><input type="radio" name="res" value="0" checked py-click="save_config"><div class="radio-tile"><span>4K</span></div></div>
+                    <div class="radio-option"><input type="radio" name="res" value="720"><div class="radio-tile"><span>SD</span></div></div>
+                    <div class="radio-option"><input type="radio" name="res" value="1080"><div class="radio-tile"><span>HD</span></div></div>
+                    <div class="radio-option"><input type="radio" name="res" value="0" checked><div class="radio-tile"><span>4K</span></div></div>
                 </div>
             </div>
         </div>
 
         <div class="upload-container">
             <input type="file" id="upload" accept="video/*">
-            <button class="btn-action" id="btn_stitch" py-click="start_stitching">GET STITCHES</button>
+            <button class="btn-action" id="btn_stitch">GET STITCHES</button>
         </div>
 
         <div id="gallery" class="gallery"></div>
-        <button id="btn_reshuffle" class="btn-secondary" style="display:none" py-click="reshuffle">RESHUFFLE SEEDS 🎲</button>
+        <button id="btn_reshuffle" class="btn-secondary" style="display:none">RESHUFFLE SEEDS 🎲</button>
     </div>
 
     <div id="tuner-view">
         <div class="tuner-header">
             <h2>FINE TUNE</h2>
-            <button class="btn-secondary" style="width: auto; padding: 5px 15px;" py-click="close_tuner">CLOSE</button>
+            <button class="btn-secondary" style="width: auto; padding: 5px 15px;" id="close_tuner">CLOSE</button>
         </div>
-        
+
         <canvas id="tuner_canvas" style="width:100%; height: 150px; border: 1px solid #00ffcc;"></canvas>
-        
+
         <div class="tuner-controls">
             <span class="config-label">Slit Width (Chunkiness)</span>
             <input type="range" id="tuner_width" min="1" max="100">
-            
+
             <span class="config-label">Jitter (Chaos)</span>
             <input type="range" id="tuner_jitter" min="0" max="50">
         </div>
-        
-        <button class="btn-action" py-click="render_from_tuner">RENDER FINAL</button>
+
+        <button class="btn-action" id="render_final">RENDER FINAL</button>
     </div>
 
     <video id="hidden_video" muted playsinline></video>
     <canvas id="hidden_canvas"></canvas>
 
-    <py-script>
-import js
-from js import document, console, localStorage, JSON, window
-import asyncio
-import random
+    <!-- Debug panel -->
+    <div id="debug"><h4>Debug</h4><pre id="debug_pre">Starting...</pre></div>
 
-def log(msg):
-    console.log(msg)
+    <!-- Pyodide loader (from jsdelivr CDN stable release) -->
+    <script>
+    // Show debug messages in the panel and console
+    function dbg(msg){
+        console.log(msg);
+        const pre = document.getElementById("debug_pre");
+        pre.textContent = (pre.textContent + "\\n" + msg).slice(-5000);
+    }
+    dbg("Loading Pyodide...");
+
+    // Recommended CDN path from pyodide docs (lock to a stable release)
+    const PYODIDE_BASE = "https://cdn.jsdelivr.net/pyodide/v0.29.0/full/";
+
+    // load pyodide script dynamically
+    (function(){
+        const s = document.createElement("script");
+        s.src = PYODIDE_BASE + "pyodide.js";
+        s.onload = async () => {
+            dbg("pyodide.js loaded, initializing...");
+            try {
+                window.pyodide = await loadPyodide({indexURL: PYODIDE_BASE});
+                dbg("Pyodide initialized.");
+                // pre-load any packages if needed (none required for core)
+                // expose helper to call python functions
+                window.call_py = async function(expr){
+                    try{
+                        dbg("JS -> running: " + expr);
+                        const res = await pyodide.runPythonAsync(expr);
+                        dbg("JS -> python returned");
+                        return res;
+                    } catch(err){
+                        dbg("JS -> python error: " + err);
+                        throw err;
+                    }
+                };
+                // Now load the inline python block: (we'll extract and run it)
+                await initializePythonFromScript();
+            } catch(e){
+                dbg("Pyodide init error: " + e);
+                document.getElementById("overlay").style.display = "none";
+            }
+        };
+        s.onerror = (ev)=>{ dbg("Failed to load pyodide.js: " + ev); };
+        document.head.appendChild(s);
+    })();
+
+    async function initializePythonFromScript(){
+        // Grab the <script type="text/python"> block we will add later.
+        const pyScriptEl = document.getElementById("inline_python");
+        if(!pyScriptEl){
+            dbg("No inline python block found.");
+            return;
+        }
+        const code = pyScriptEl.textContent;
+        dbg("Loading python code into Pyodide...");
+        try{
+            await pyodide.runPythonAsync(code);
+            dbg("Python code loaded.");
+        } catch(err){
+            dbg("Error loading python: " + err);
+            console.error(err);
+        }
+
+        // Wire up UI buttons to Python functions by calling them via runPythonAsync.
+        document.getElementById("btn_stitch").onclick = async () => {
+            dbg("GET STITCHES clicked");
+            try{
+                document.getElementById("overlay").style.display = "flex";
+                document.getElementById("overlay-text").innerText = "LOADING...";
+                await pyodide.runPythonAsync("await start_stitching()");
+                dbg("start_stitching() finished");
+                document.getElementById("overlay").style.display = "none";
+                document.getElementById("btn_reshuffle").style.display = "block";
+            } catch(err){
+                dbg("Error running start_stitching(): " + err);
+                alert("Error: " + err);
+                document.getElementById("overlay").style.display = "none";
+            }
+        };
+        document.getElementById("btn_reshuffle").onclick = async () => {
+            dbg("RESHUFFLE clicked");
+            try{
+                document.getElementById("overlay").style.display = "flex";
+                document.getElementById("overlay-text").innerText = "RESHUFFLING...";
+                await pyodide.runPythonAsync("await reshuffle()");
+                document.getElementById("overlay").style.display = "none";
+            } catch(err){
+                dbg("Error reshuffle: " + err);
+                document.getElementById("overlay").style.display = "none";
+            }
+        };
+        document.getElementById("close_tuner").onclick = async () => {
+            await pyodide.runPythonAsync("close_tuner()");
+        };
+        document.getElementById("render_final").onclick = async () => {
+            try{
+                document.getElementById("overlay").style.display = "flex";
+                document.getElementById("overlay-text").innerText = "RENDERING...";
+                await pyodide.runPythonAsync("await render_from_tuner()");
+                document.getElementById("overlay").style.display = "none";
+                alert("Done! Long-press image to save.");
+            } catch(err){
+                dbg("Error render final: " + err);
+                document.getElementById("overlay").style.display = "none";
+                alert("Error: " + err);
+            }
+        };
+
+        dbg("UI wired to Python functions.");
+    }
+    </script>
+
+    <!-- Inline Python (converted from your original PyScript) -->
+    <script type="text/python" id="inline_python">
+from js import document, console, localStorage, JSON, window, setTimeout
+import asyncio, random, math
+
+# Simple debug helper
+def dbg(msg):
+    console.log("[PY] " + str(msg))
+    pre = document.getElementById("debug_pre")
+    if pre:
+        pre.textContent = pre.textContent + "\n[PY] " + str(msg)
 
 # --- PERSISTENCE ---
 def load_config():
@@ -119,66 +230,89 @@ def load_config():
         data = localStorage.getItem("baalsamic_v6_config")
         if data:
             config = JSON.parse(data)
-            fps_val = str(config.fps) if hasattr(config, 'fps') else "15"
-            res_val = str(config.res) if hasattr(config, 'res') else "0"
+            fps_val = str(config.get("fps", "15"))
+            res_val = str(config.get("res", "0"))
             for r in document.getElementsByName("fps"):
-                if r.value == fps_val: r.checked = True
+                if r.value == fps_val:
+                    r.checked = True
             for r in document.getElementsByName("res"):
-                if r.value == res_val: r.checked = True
-    except: pass
+                if r.value == res_val:
+                    r.checked = True
+    except Exception as e:
+        dbg("load_config error: " + str(e))
 
 def save_config(*args):
-    fps_val = document.querySelector('input[name="fps"]:checked').value
-    res_val = document.querySelector('input[name="res"]:checked').value
-    config = js.Object.new()
-    config.fps = fps_val
-    config.res = res_val
-    localStorage.setItem("baalsamic_v6_config", JSON.stringify(config))
+    try:
+        fps_val = document.querySelector('input[name="fps"]:checked').value
+        res_val = document.querySelector('input[name="res"]:checked').value
+        config = {"fps": fps_val, "res": res_val}
+        localStorage.setItem("baalsamic_v6_config", JSON.stringify(config))
+        dbg(f"Saved config: fps={fps_val}, res={res_val}")
+    except Exception as e:
+        dbg("save_config error: " + str(e))
+
+# Attach simple change handlers to radio inputs (JS side is simpler)
+for el in document.getElementsByName("fps"):
+    el.addEventListener("change", lambda ev: save_config())
+for el in document.getElementsByName("res"):
+    el.addEventListener("change", lambda ev: save_config())
 
 load_config()
 
 # --- STATE ---
 current_video_file = None
 current_seed_configs = {}
+current_tuner_seed = 0
 
-# --- LOGIC ---
+# Helper: create element
+def create_div_with_canvas(seed):
+    div = document.createElement("div")
+    div.className = "card"
+    div.innerHTML = f'<div class="card-header">VAR #{seed}</div><canvas id="cvs_{seed}"></canvas>'
+    return div
+
+# --- CORE LOGIC ---
 async def start_stitching(*args):
-    log("Button Clicked: start_stitching")
-    
+    dbg("start_stitching called")
     upload_input = document.getElementById("upload")
     if not upload_input.files.length:
         window.alert("Select a video first.")
         return
-
-    document.getElementById("overlay").style.display = "flex"
-    document.getElementById("overlay-text").innerText = "LOADING..."
-    
-    fps = int(document.querySelector('input[name="fps"]:checked').value)
-    
+    # get file and set video src
     file = upload_input.files.item(0)
-    url = js.URL.createObjectURL(file)
+    url = window.URL.createObjectURL(file)
     video = document.getElementById("hidden_video")
     video.src = url
-    
-    while video.readyState < 1: 
+
+    # wait for metadata
+    dbg("Waiting for video metadata...")
+    # wait until duration available
+    tries = 0
+    while not video.duration or math.isnan(video.duration):
         await asyncio.sleep(0.1)
-    
+        tries += 1
+        if tries > 200:
+            dbg("Timed out waiting for video metadata")
+            window.alert("Unable to load video metadata.")
+            return
+    dbg(f"Video loaded: duration={video.duration}, w={video.videoWidth}, h={video.videoHeight}")
+    fps = int(document.querySelector('input[name="fps"]:checked').value)
     await generate_contact_sheet(video, fps)
-    
-    document.getElementById("overlay").style.display = "none"
-    document.getElementById("btn_reshuffle").style.display = "block"
+    dbg("generate_contact_sheet completed")
 
 async def reshuffle(*args):
+    dbg("reshuffle called")
     await start_stitching()
 
 async def generate_contact_sheet(video_elem, target_fps):
+    dbg("generate_contact_sheet start")
     gallery = document.getElementById("gallery")
     gallery.innerHTML = ""
     current_seed_configs.clear()
-    
+
     seeds = [random.randint(100, 999) for _ in range(3)]
-    base_factor = 60 / target_fps 
-    
+    base_factor = 60 / target_fps
+
     for i, seed in enumerate(seeds):
         random.seed(seed)
         base_w = random.randint(2, 8)
@@ -187,97 +321,115 @@ async def generate_contact_sheet(video_elem, target_fps):
             "jitter": random.randint(0, int(20 * base_factor))
         }
         current_seed_configs[seed] = cfg
-        
-        div = document.createElement("div")
-        div.className = "card"
-        div.innerHTML = f"""<div class="card-header">VAR #{seed}</div><canvas id="cvs_{seed}"></canvas>"""
+
+        div = create_div_with_canvas(seed)
         gallery.appendChild(div)
-        
+        # small tick so DOM updates
+        await asyncio.sleep(0.02)
         await run_process(video_elem, cfg["width"], cfg["jitter"], 150, f"cvs_{seed}", target_fps, seed)
+    dbg("generate_contact_sheet done")
 
 async def run_process(video_elem, width, jitter, target_height, canvas_id, target_fps, seed):
+    dbg(f"run_process seed={seed} width={width} jitter={jitter} target_fps={target_fps}")
     canvas = document.getElementById("hidden_canvas")
     ctx = canvas.getContext("2d")
     out_canvas = document.getElementById(canvas_id)
     out_ctx = out_canvas.getContext("2d")
-    
+
+    # compute scale
     scale = 1.0
     if target_height > 0 and video_elem.videoHeight > target_height:
         scale = target_height / video_elem.videoHeight
-    
+
     w = int(video_elem.videoWidth * scale)
     h = int(video_elem.videoHeight * scale)
-    canvas.width = w; canvas.height = h
-    
+    canvas.width = w
+    canvas.height = h
+
     curr_slit = max(1, int(width * scale))
     curr_jitter = int(jitter * scale)
 
     duration = video_elem.duration
     step = 1 / target_fps
-    total_frames = int(duration * target_fps)
-    out_canvas.width = total_frames * curr_slit
+    total_frames = int(duration * target_fps) if duration and not math.isnan(duration) else 1
+    out_canvas.width = max(1, total_frames * curr_slit)
     out_canvas.height = h
-    
+
     current_time = 0.0
     x_pos = 0
     random.seed(seed)
-    
-    while current_time < duration:
+
+    # guard: limit frames if enormous
+    max_columns = 3000
+    columns = 0
+
+    while current_time < duration and columns < max_columns:
         video_elem.currentTime = current_time
-        await asyncio.sleep(0.02)
-        ctx.drawImage(video_elem, 0, 0, w, h)
-        
+        # allow browser to seek and paint
+        await asyncio.sleep(0.04)
+        try:
+            ctx.drawImage(video_elem, 0, 0, w, h)
+        except Exception as e:
+            dbg("drawImage error: " + str(e))
+            break
+
         offset = random.randint(-curr_jitter, curr_jitter)
         center_x = (w // 2) + offset
         start_x = max(0, min(w - curr_slit, center_x))
-        out_ctx.drawImage(canvas, start_x, 0, curr_slit, h, x_pos, 0, curr_slit, h)
-        
+        try:
+            out_ctx.drawImage(canvas, start_x, 0, curr_slit, h, x_pos, 0, curr_slit, h)
+        except Exception as e:
+            dbg("out_ctx.drawImage error: " + str(e))
+            break
+
         current_time += step
         x_pos += curr_slit
-        if x_pos % 50 == 0: await asyncio.sleep(0.001)
+        columns += 1
+        if columns % 50 == 0:
+            await asyncio.sleep(0.001)
 
-    def open_tuner_handler(e):
+    # click handler to open tuner
+    def open_tuner_handler(ev):
         open_tuner(seed)
     out_canvas.onclick = open_tuner_handler
-
-# --- TUNER LOGIC ---
-current_tuner_seed = 0
+    dbg(f"run_process finished seed={seed} columns={columns}")
 
 def open_tuner(seed):
     global current_tuner_seed
     current_tuner_seed = seed
     cfg = current_seed_configs[seed]
-    
+
     document.getElementById("tuner_width").value = cfg["width"]
     document.getElementById("tuner_jitter").value = cfg["jitter"]
-    
+
     document.getElementById("main-view").style.display = "none"
     document.getElementById("tuner-view").style.display = "block"
-    
+
     src_cvs = document.getElementById(f"cvs_{seed}")
     dest_cvs = document.getElementById("tuner_canvas")
     dest_cvs.width = src_cvs.width
     dest_cvs.height = src_cvs.height
     dest_cvs.getContext("2d").drawImage(src_cvs, 0, 0)
+    dbg(f"Opened tuner for seed {seed}")
 
-def close_tuner(*args):
+def close_tuner():
     document.getElementById("tuner-view").style.display = "none"
     document.getElementById("main-view").style.display = "block"
 
 async def render_from_tuner(*args):
-    document.getElementById("overlay").style.display = "flex"
-    document.getElementById("overlay-text").innerText = "RENDERING FINAL..."
-    
+    dbg("render_from_tuner called")
     width = int(document.getElementById("tuner_width").value)
     jitter = int(document.getElementById("tuner_jitter").value)
     fps = int(document.querySelector('input[name="fps"]:checked').value)
     res = int(document.querySelector('input[name="res"]:checked').value)
     video = document.getElementById("hidden_video")
-    
+
     await run_process(video, width, jitter, res, "tuner_canvas", fps, current_tuner_seed)
-    
-    document.getElementById("overlay").style.display = "none"
-    window.alert("Done! Long-press image to save.")
-    </py-script>
+    dbg("render_from_tuner finished")
+
+# --- Startup message ---
+dbg("Python module loaded.")
+    </script>
+
 </body>
 </html>
