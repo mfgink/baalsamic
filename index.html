@@ -3,106 +3,131 @@
 <head>
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width,initial-scale=1" />
-    <title>Baalsamic V9</title>
+    <title>Baalsamic V10.4</title>
 
     <style>
-        /* BASE & TYPOGRAPHY */
-        body { background: #0d0d0d; color: #ccc; font-family: monospace; padding: 0; margin: 0; height: 100vh; display: flex; flex-direction: column; overflow: hidden; }
+        /* BASE */
+        body { background: #0d0d0d; color: #ccc; font-family: monospace; padding: 0; margin: 0; height: 100vh; width: 100vw; overflow: hidden; }
         h1 { color: #ff0055; letter-spacing: 2px; text-transform: uppercase; margin: 20px 0; font-size: 1.5em; text-align: center; }
         
-        /* COMMON UI ELEMENTS */
-        .btn-action { width: 100%; background: #00ffcc; color: black; border: none; padding: 15px; font-size: 1.2em; font-weight: bold; cursor: pointer; text-transform: uppercase; letter-spacing: 1px; border-radius: 4px; }
-        .btn-secondary { background: #333; color: #ccc; border: 1px solid #555; padding: 8px 15px; cursor: pointer; border-radius: 4px; font-size: 0.9em; }
+        /* LAYOUT UTILS */
+        .container { max-width: 600px; margin: 0 auto; width: 100%; padding: 20px; box-sizing: border-box;}
         
-        /* SCREENS */
-        .screen { display: none; flex-direction: column; height: 100%; padding: 20px; box-sizing: border-box; }
-        #screen-ingest { display: flex; max-width: 600px; margin: 0 auto; width: 100%; }
-        #screen-time-travel { padding: 0; } /* Full screen for editor */
+        /* INGEST SCREEN (Visible by default) */
+        #screen-ingest { 
+            display: flex; 
+            flex-direction: column; 
+            height: 100%; 
+            overflow-y: auto; 
+        }
 
-        /* INGEST CONFIG */
+        /* CONFIG STYLES */
         .config-panel { background: #1a1a1a; padding: 15px; border: 1px solid #333; border-radius: 8px; margin-bottom: 20px; text-align: left; }
         .config-label { color: #ff0055; font-weight: bold; display: block; margin-bottom: 8px; font-size: 0.8em; text-transform: uppercase; }
-        
         .radio-group { display: flex; gap: 10px; margin-bottom: 15px; }
         .radio-option { flex: 1; position: relative; }
         .radio-option input { opacity: 0; position: absolute; width: 100%; height: 100%; cursor: pointer; }
         .radio-tile { display: flex; align-items: center; justify-content: center; background: #222; border: 1px solid #444; padding: 12px; border-radius: 4px; transition: 0.2s; }
         .radio-option input:checked + .radio-tile { background: #ff0055; color: white; border-color: #ff0055; }
-        
         .upload-input { padding: 15px; background: #222; border: 1px solid #333; color: #eee; width: 100%; box-sizing: border-box; border-radius: 4px; margin-bottom: 20px; }
+        .btn-action { width: 100%; background: #00ffcc; color: black; border: none; padding: 15px; font-size: 1.2em; font-weight: bold; cursor: pointer; text-transform: uppercase; letter-spacing: 1px; border-radius: 4px; }
+        .btn-secondary { background: #333; color: #ccc; border: 1px solid #555; padding: 8px 15px; cursor: pointer; border-radius: 4px; font-size: 0.9em; white-space: nowrap;}
 
-        /* TIME TRAVEL EDITOR layout */
-        .editor-container { display: flex; flex-direction: column; height: 100%; }
-        
-        /* THE VIEWPORT (The Stage) */
-        .viewport-wrapper { 
-            flex: 1; 
-            background: #000; 
+        /* TIME TRAVEL SCREEN (Hidden by default) */
+        #screen-time-travel { 
+            display: none; 
+            flex-direction: column; 
+            height: 100vh; 
+            width: 100vw;
+            background: #000;
+        }
+
+        /* 1. HEADER (5% Height) */
+        .tuner-header {
+            height: 5vh;
+            max-height: 80px;
+            min-height: 50px;
+            flex-shrink: 0;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 0 15px;
+            background: #0d0d0d;
+            border-bottom: 1px solid #333;
+            z-index: 10;
+        }
+        .tuner-header h2 { margin: 0; color: #ff0055; font-size: 1.2em; letter-spacing: 1px; }
+
+        /* 2. LIGHTBOX (Fills Remaining Space) */
+        .lightbox-wrapper { 
+            flex-grow: 1; 
+            margin: 10px 0; 
             position: relative; 
             display: flex; 
             align-items: center; 
             justify-content: center; 
             overflow: hidden;
-            border-bottom: 1px solid #333;
-        }
-        
-        .teal-frame {
-            border: 2px solid #00ffcc;
-            width: 96%; /* 2% buffer on each side */
-            height: 96%; /* 2% buffer top/bottom */
-            position: relative;
-            overflow: hidden; /* This creates the "Window" */
-            display: flex;
-            align-items: center;
-            box-shadow: 0 0 15px rgba(0, 255, 204, 0.2);
-        }
-
-        /* The Scrollable Area inside the Frame */
-        .scroll-container {
             width: 100%;
-            height: 100%;
-            overflow-x: auto; /* Horizontal Scroll */
-            overflow-y: hidden;
-            white-space: nowrap;
-            -webkit-overflow-scrolling: touch;
-            display: flex;
-            align-items: center; /* Vertically center the image */
+            background: #000;
         }
         
-        /* The Actual Glitch Image */
+        .stage-container {
+            position: relative;
+            display: inline-block; /* Wraps tight around image */
+        }
+
         #main_canvas {
-            height: 100%; /* Fill height of frame */
-            width: auto;  /* Width is dynamic based on time */
+            max-width: 100%;
+            max-height: 100%;
+            width: auto;
+            height: auto;
+            object-fit: contain;
             display: block;
+            pointer-events: none; /* Pass clicks to Lens */
         }
 
-        /* CROP OVERLAY (Shadows) */
-        .crop-shadow {
+        /* THE LENS (Red Box) */
+        #crop-lens {
             position: absolute;
-            top: 0; bottom: 0;
-            background: rgba(0, 0, 0, 0.7); /* Darken area outside crop */
-            pointer-events: none; /* Let clicks pass through to scroller */
-            transition: width 0.3s;
-            z-index: 10;
+            top: 0; left: 0;
+            height: 100%; 
+            border: 2px solid #ff0055;
+            box-shadow: 0 0 0 9999px rgba(0, 0, 0, 0.85);
+            cursor: grab;
+            box-sizing: border-box;
+            touch-action: none;
         }
-        #shadow-left { left: 0; width: 0%; border-right: 1px dashed #ff0055; }
-        #shadow-right { right: 0; width: 0%; border-left: 1px dashed #ff0055; }
+        #crop-lens:active { cursor: grabbing; border-color: #fff; }
 
-        /* EDITOR CONTROLS (Bottom Panel) */
-        .editor-controls { background: #111; padding: 15px; border-top: 1px solid #333; z-index: 20; }
+        /* 3. CONTROLS (25% Height) */
+        .editor-controls {
+            height: 25vh;
+            max-height: 300px;
+            min-height: 200px;
+            flex-shrink: 0;
+            background: #111;
+            padding: 15px;
+            border-top: 1px solid #333;
+            z-index: 20;
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            box-sizing: border-box;
+        }
+
         .control-row { display: flex; gap: 10px; margin-bottom: 10px; align-items: center; }
-        .control-row label { color: #00ffcc; font-size: 0.8em; width: 60px; }
-        input[type=range] { flex: 1; accent-color: #00ffcc; }
+        .control-row label { color: #00ffcc; font-size: 0.8em; width: 50px; flex-shrink: 0; }
+        input[type=range] { flex: 1; accent-color: #00ffcc; cursor: pointer; }
         
-        /* Ratio Buttons Mini */
         .ratio-mini-group { display: flex; gap: 5px; flex: 1; }
-        .ratio-btn { flex: 1; background: #222; border: 1px solid #444; color: #888; padding: 8px; font-size: 0.7em; cursor: pointer; }
+        .ratio-btn { flex: 1; background: #222; border: 1px solid #444; color: #888; padding: 10px 5px; font-size: 0.75em; cursor: pointer; border-radius: 4px; }
         .ratio-btn.active { background: #ff0055; color: white; border-color: #ff0055; }
 
         /* LOADING OVERLAY */
         #overlay { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.92); z-index: 999; display: flex; flex-direction: column; align-items: center; justify-content: center; color:#ff0055; backdrop-filter: blur(5px); }
         .loader { border: 4px solid #333; border-top: 4px solid #ff0055; border-radius: 50%; width: 40px; height: 40px; animation: spin 1s linear infinite; margin-bottom: 15px; }
         @keyframes spin { 0% { transform: rotate(0deg); } 100% { transform: rotate(360deg); } }
+        #overlay-text { font-family: monospace; font-size: 1.2em; color: #00ffcc; }
         
         video { display: none; }
     </style>
@@ -114,8 +139,8 @@
         <div id="overlay-text">BOOTING SYSTEM...</div>
     </div>
 
-    <div id="screen-ingest" class="screen">
-        <h1>BAALSAMIC V9</h1>
+    <div id="screen-ingest" class="container">
+        <h1>BAALSAMIC V10.4</h1>
         
         <div class="config-panel">
             <span class="config-label">Sampling Rate (FPS)</span>
@@ -127,9 +152,9 @@
 
             <span class="config-label">Resolution</span>
             <div class="radio-group">
-                <div class="radio-option"><input type="radio" name="res" value="720"><div class="radio-tile"><span>SD</span></div></div>
+                <div class="radio-option"><input type="radio" name="res" value="720" checked><div class="radio-tile"><span>SD</span></div></div>
                 <div class="radio-option"><input type="radio" name="res" value="1080"><div class="radio-tile"><span>HD</span></div></div>
-                <div class="radio-option"><input type="radio" name="res" value="0" checked><div class="radio-tile"><span>4K</span></div></div>
+                <div class="radio-option"><input type="radio" name="res" value="0"><div class="radio-tile"><span>4K</span></div></div>
             </div>
         </div>
 
@@ -137,46 +162,45 @@
         <button class="btn-action" id="btn_stitch">GET STITCHES</button>
     </div>
 
-    <div id="screen-time-travel" class="screen">
-        <div class="editor-container">
-            
-            <div class="viewport-wrapper">
-                <div class="teal-frame" id="viewport_frame">
-                    
-                    <div class="scroll-container" id="scroll_container">
-                        <canvas id="main_canvas"></canvas>
-                    </div>
+    <div id="screen-time-travel">
+        <div class="tuner-header">
+            <h2>FINE TUNE</h2>
+            <button class="btn-secondary" id="close_tuner">CLOSE</button>
+        </div>
+        
+        <div class="lightbox-wrapper">
+            <div class="stage-container" id="stage_container">
+                <canvas id="main_canvas"></canvas>
+                <div id="crop-lens"></div>
+            </div>
+        </div>
 
-                    <div id="shadow-left" class="crop-shadow"></div>
-                    <div id="shadow-right" class="crop-shadow"></div>
+        <div class="editor-controls">
+            <div class="control-row">
+                <label>CROP</label>
+                <div class="ratio-mini-group">
+                    <button class="ratio-btn" onclick="setRatio('max')">FULL</button>
+                    <button class="ratio-btn active" onclick="setRatio('1:1')">1:1</button>
+                    <button class="ratio-btn" onclick="setRatio('16:9')">16:9</button>
+                    <button class="ratio-btn" onclick="setRatio('9:16')">9:16</button>
                 </div>
             </div>
 
-            <div class="editor-controls">
-                
-                <div class="control-row">
-                    <label>RATIO</label>
-                    <div class="ratio-mini-group">
-                        <button class="ratio-btn active" onclick="setRatio('max')">MAX</button>
-                        <button class="ratio-btn" onclick="setRatio('1:1')">1:1</button>
-                        <button class="ratio-btn" onclick="setRatio('16:9')">16:9</button>
-                    </div>
-                </div>
-
-                <div class="control-row">
-                    <label>WIDTH</label>
-                    <input type="range" id="input_width" min="1" max="100" value="20" onchange="triggerUpdate()">
-                </div>
-                <div class="control-row">
-                    <label>JITTER</label>
-                    <input type="range" id="input_jitter" min="0" max="50" value="5" onchange="triggerUpdate()">
-                </div>
-
-                <div style="display:flex; gap:10px; margin-top:10px;">
-                    <button class="btn-secondary" onclick="resetApp()">BACK</button>
-                    <button class="btn-action" id="btn_render_final">RENDER VIEW</button>
-                </div>
+            <div class="control-row" id="row_pos">
+                <label>POS</label>
+                <input type="range" id="input_pos" min="0" max="100" value="50" oninput="updateLensPositionFromSlider()">
             </div>
+
+            <div class="control-row">
+                <label>WIDTH</label>
+                <input type="range" id="input_width" min="1" max="200" value="12" onchange="triggerUpdate()">
+            </div>
+            <div class="control-row">
+                <label>JITTER</label>
+                <input type="range" id="input_jitter" min="0" max="50" value="5" onchange="triggerUpdate()">
+            </div>
+
+            <button class="btn-action" id="btn_render_final" style="margin-top:5px;">RENDER VIEW</button>
         </div>
     </div>
 
@@ -184,42 +208,132 @@
     <canvas id="hidden_canvas"></canvas>
 
     <script>
-    // --- UI MANAGER ---
-    let currentRatio = 'max';
+    let currentRatio = '1:1';
 
     function setRatio(r) {
         currentRatio = r;
-        document.querySelectorAll('.ratio-btn').forEach(b => b.classList.remove('active'));
-        event.target.classList.add('active');
-        updateCropShadows();
-    }
-
-    function updateCropShadows() {
-        const frame = document.getElementById('viewport_frame');
-        const left = document.getElementById('shadow-left');
-        const right = document.getElementById('shadow-right');
-        
-        // Default: No crop
-        let cropW = 0; 
-        
-        if (currentRatio !== 'max') {
-            const h = frame.clientHeight;
-            let targetW = 0;
-            
-            if (currentRatio === '1:1') targetW = h;
-            if (currentRatio === '16:9') targetW = h * (9/16); // Portrait 9:16 relative to frame
-            
-            // Calculate percentage of empty space
-            const totalW = frame.clientWidth;
-            const diff = totalW - targetW;
-            if (diff > 0) {
-                cropW = (diff / 2) / totalW * 100;
+        document.querySelectorAll('.ratio-btn').forEach(btn => {
+            btn.classList.remove('active');
+            if(btn.innerText.toLowerCase() === r.toLowerCase() || 
+               (r === 'max' && btn.innerText === 'FULL')) {
+                btn.classList.add('active');
             }
+        });
+        
+        const posRow = document.getElementById('row_pos');
+        if (r === 'max') {
+            posRow.style.opacity = '0.3';
+            posRow.style.pointerEvents = 'none';
+        } else {
+            posRow.style.opacity = '1';
+            posRow.style.pointerEvents = 'auto';
         }
-
-        left.style.width = cropW + "%";
-        right.style.width = cropW + "%";
+        
+        updateLensDimensions();
     }
+
+    function updateLensDimensions() {
+        const canvas = document.getElementById('main_canvas');
+        const lens = document.getElementById('crop-lens');
+        
+        if (currentRatio === 'max') {
+            lens.style.display = 'none';
+            return;
+        }
+        lens.style.display = 'block';
+
+        const visH = canvas.clientHeight;
+        const visW = canvas.clientWidth;
+        
+        let targetW = visW;
+        
+        if (currentRatio === '1:1') targetW = visH; 
+        
+        // 16:9 is Wide (1.77), 9:16 is Tall (0.56)
+        if (currentRatio === '16:9') targetW = visH * (16/9); 
+        if (currentRatio === '9:16') targetW = visH * (9/16);
+
+        if (targetW > visW) targetW = visW;
+
+        lens.style.width = targetW + "px";
+        lens.style.height = visH + "px";
+        lens.style.top = canvas.offsetTop + "px";
+        
+        // Reset position to center if range changes
+        const range = visW - targetW;
+        const left = range / 2;
+        lens.style.left = (canvas.offsetLeft + left) + "px";
+        
+        // Sync slider
+        if(range > 0) {
+            document.getElementById('input_pos').value = 50;
+        }
+    }
+
+    function updateLensPositionFromSlider() {
+        if (currentRatio === 'max') return;
+        const canvas = document.getElementById('main_canvas');
+        const lens = document.getElementById('crop-lens');
+        const slider = document.getElementById('input_pos');
+        
+        const cw = canvas.clientWidth;
+        const lw = parseFloat(lens.style.width);
+        
+        const range = cw - lw;
+        const offset = (slider.value / 100) * range;
+        
+        lens.style.left = (canvas.offsetLeft + offset) + "px";
+    }
+
+    // DRAG LOGIC (Touch + Mouse)
+    const lens = document.getElementById('crop-lens');
+    let isDragging = false;
+    let startX = 0;
+    let startLeft = 0;
+
+    function startDrag(e) {
+        if(currentRatio === 'max') return;
+        isDragging = true;
+        startX = (e.touches ? e.touches[0].clientX : e.clientX);
+        startLeft = parseFloat(lens.style.left) || 0;
+        lens.style.cursor = 'grabbing';
+    }
+
+    function doDrag(e) {
+        if(!isDragging) return;
+        e.preventDefault();
+        const clientX = (e.touches ? e.touches[0].clientX : e.clientX);
+        const delta = clientX - startX;
+        const canvas = document.getElementById('main_canvas');
+        
+        const minLeft = canvas.offsetLeft;
+        const maxLeft = minLeft + (canvas.clientWidth - parseFloat(lens.style.width));
+        
+        let newLeft = startLeft + delta;
+        if(newLeft < minLeft) newLeft = minLeft;
+        if(newLeft > maxLeft) newLeft = maxLeft;
+        
+        lens.style.left = newLeft + "px";
+        
+        // Sync slider
+        const range = maxLeft - minLeft;
+        if(range > 0) {
+            document.getElementById('input_pos').value = ((newLeft - minLeft) / range) * 100;
+        }
+    }
+
+    function stopDrag() {
+        isDragging = false;
+        lens.style.cursor = 'grab';
+    }
+
+    lens.addEventListener('mousedown', startDrag);
+    lens.addEventListener('touchstart', startDrag);
+    window.addEventListener('mousemove', doDrag);
+    window.addEventListener('touchmove', doDrag, {passive: false});
+    window.addEventListener('mouseup', stopDrag);
+    window.addEventListener('touchend', stopDrag);
+
 
     function resetApp() {
         document.getElementById('screen-time-travel').style.display = 'none';
@@ -227,11 +341,13 @@
     }
 
     function triggerUpdate() {
-        // Debounce or immediate call to Python to re-render using current slider values
         window.call_py("await update_preview()");
     }
 
-    // --- PYODIDE LOADER ---
+    window.addEventListener('resize', () => {
+        setTimeout(updateLensDimensions, 100);
+    });
+
     const PYODIDE_BASE = "https://cdn.jsdelivr.net/pyodide/v0.23.2/full/";
     
     function setLoading(msg, show=true) {
@@ -257,29 +373,46 @@
         const code = document.getElementById("inline_python").textContent;
         await pyodide.runPythonAsync(code);
         
-        // Wire Buttons
         document.getElementById("btn_stitch").onclick = async () => {
             setLoading("LOADING VIDEO...");
-            await pyodide.runPythonAsync("await ingest_video()");
+            await pyodide.runPythonAsync(`await ingest_video()`);
         };
         
         document.getElementById("btn_render_final").onclick = async () => {
             setLoading("RENDERING FINAL...");
-            // Logic to perform crop/save would go here
-            // For now, just save the canvas
+            
             const canvas = document.getElementById("main_canvas");
+            const lens = document.getElementById("crop-lens");
+            
+            const scale = canvas.width / canvas.clientWidth; 
+            
+            let sx = 0, sw = canvas.width;
+            
+            if (currentRatio !== 'max') {
+                const canvasLeft = canvas.offsetLeft;
+                const lensLeft = parseFloat(lens.style.left || 0);
+                const relativeLeft = lensLeft - canvasLeft;
+                
+                sx = relativeLeft * scale;
+                sw = parseFloat(lens.style.width) * scale;
+                
+                if(sx < 0) sx = 0;
+                if(sx + sw > canvas.width) sw = canvas.width - sx;
+            }
+            
+            const temp = document.createElement('canvas');
+            temp.width = sw;
+            temp.height = canvas.height;
+            temp.getContext('2d').drawImage(canvas, sx, 0, sw, canvas.height, 0, 0, sw, canvas.height);
+            
             const link = document.createElement('a');
-            link.download = 'baalsamic_v9.png';
-            link.href = canvas.toDataURL();
+            link.download = 'baalsamic_v10_4.png';
+            link.href = temp.toDataURL();
             link.click();
             setLoading("", false);
         };
 
-        setLoading("", false); // Unlock UI
-        
-        // Initial Ratio Setup
-        window.addEventListener('resize', updateCropShadows);
-        updateCropShadows();
+        setLoading("", false);
     }
     </script>
 
@@ -287,7 +420,6 @@
 from js import document, console, localStorage, JSON, window, setTimeout
 import asyncio, random, math
 
-# --- STATE ---
 current_seed = 0
 
 async def ingest_video(*args):
@@ -302,32 +434,43 @@ async def ingest_video(*args):
     video = document.getElementById("hidden_video")
     video.src = url
 
-    # Wait for metadata
     while not video.duration or math.isnan(video.duration):
         await asyncio.sleep(0.1)
     
-    # Transition to Time Travel Screen
+    # --- AUTO-FIT LOGIC ---
+    fps = int(document.querySelector('input[name="fps"]:checked').value)
+    duration = video.duration
+    total_frames = max(1, int(duration * fps))
+    
+    target_w = video.videoHeight * 0.75
+    auto_slit = int(target_w / total_frames)
+    auto_slit = max(1, min(200, auto_slit))
+    
+    document.getElementById("input_width").value = auto_slit
+    document.getElementById("input_jitter").value = 5
+    
+    # Transition
     document.getElementById("screen-ingest").style.display = "none"
     document.getElementById("screen-time-travel").style.display = "flex"
     
-    # Initial Render
     global current_seed
     current_seed = random.randint(100, 999)
     await update_preview()
     
+    window.setRatio('1:1') 
     document.getElementById("overlay").style.display = "none"
 
 async def update_preview(*args):
-    # Read UI inputs
     width = int(document.getElementById("input_width").value)
     jitter = int(document.getElementById("input_jitter").value)
     fps = int(document.querySelector('input[name="fps"]:checked').value)
     res = int(document.querySelector('input[name="res"]:checked').value)
     
     video = document.getElementById("hidden_video")
-    
-    # Reuse the single main canvas
     await run_process(video, width, jitter, res, "main_canvas", fps, current_seed)
+    
+    # Force redraw of lens
+    window.updateLensDimensions()
 
 async def run_process(video_elem, width, jitter, target_height, canvas_id, target_fps, seed):
     canvas = document.getElementById("hidden_canvas")
@@ -348,9 +491,9 @@ async def run_process(video_elem, width, jitter, target_height, canvas_id, targe
 
     duration = video_elem.duration
     step = 1 / target_fps
-    total_frames = int(duration * target_fps)
     
-    # Resize output canvas to fit TIME
+    total_frames = max(1, int(duration * target_fps))
+    
     out_canvas.width = total_frames * curr_slit
     out_canvas.height = h
     
@@ -360,7 +503,7 @@ async def run_process(video_elem, width, jitter, target_height, canvas_id, targe
     
     while current_time < duration:
         video_elem.currentTime = current_time
-        await asyncio.sleep(0.02) # Fast seek
+        await asyncio.sleep(0.02)
         try: ctx.drawImage(video_elem, 0, 0, w, h)
         except: break
         
