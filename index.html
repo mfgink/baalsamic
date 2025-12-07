@@ -3,7 +3,7 @@
 <head>
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width,initial-scale=1" />
-    <title>Baalsamic V10.4</title>
+    <title>Baalsamic V13.1</title>
 
     <style>
         /* BASE */
@@ -13,15 +13,9 @@
         /* LAYOUT UTILS */
         .container { max-width: 600px; margin: 0 auto; width: 100%; padding: 20px; box-sizing: border-box;}
         
-        /* INGEST SCREEN (Visible by default) */
-        #screen-ingest { 
-            display: flex; 
-            flex-direction: column; 
-            height: 100%; 
-            overflow-y: auto; 
-        }
+        /* INGEST SCREEN */
+        #screen-ingest { display: flex; flex-direction: column; height: 100%; overflow-y: auto; }
 
-        /* CONFIG STYLES */
         .config-panel { background: #1a1a1a; padding: 15px; border: 1px solid #333; border-radius: 8px; margin-bottom: 20px; text-align: left; }
         .config-label { color: #ff0055; font-weight: bold; display: block; margin-bottom: 8px; font-size: 0.8em; text-transform: uppercase; }
         .radio-group { display: flex; gap: 10px; margin-bottom: 15px; }
@@ -29,101 +23,80 @@
         .radio-option input { opacity: 0; position: absolute; width: 100%; height: 100%; cursor: pointer; }
         .radio-tile { display: flex; align-items: center; justify-content: center; background: #222; border: 1px solid #444; padding: 12px; border-radius: 4px; transition: 0.2s; }
         .radio-option input:checked + .radio-tile { background: #ff0055; color: white; border-color: #ff0055; }
-        .upload-input { padding: 15px; background: #222; border: 1px solid #333; color: #eee; width: 100%; box-sizing: border-box; border-radius: 4px; margin-bottom: 20px; }
+        
+        /* FILE UPLOAD STYLING */
+        #upload { display: none; } /* Hide default input */
+        .btn-file { 
+            display: block; width: 100%; box-sizing: border-box;
+            background: #ff0055; color: white; 
+            padding: 15px; text-align: center; font-size: 1.2em; font-weight: bold; 
+            cursor: pointer; text-transform: uppercase; letter-spacing: 1px; border-radius: 4px; 
+            margin-bottom: 5px; transition: 0.2s;
+        }
+        .btn-file:hover { background: #d40045; }
+        .file-help { color: #666; font-size: 0.8em; margin-bottom: 20px; }
+
         .btn-action { width: 100%; background: #00ffcc; color: black; border: none; padding: 15px; font-size: 1.2em; font-weight: bold; cursor: pointer; text-transform: uppercase; letter-spacing: 1px; border-radius: 4px; }
         .btn-secondary { background: #333; color: #ccc; border: 1px solid #555; padding: 8px 15px; cursor: pointer; border-radius: 4px; font-size: 0.9em; white-space: nowrap;}
 
-        /* TIME TRAVEL SCREEN (Hidden by default) */
-        #screen-time-travel { 
-            display: none; 
-            flex-direction: column; 
-            height: 100vh; 
-            width: 100vw;
-            background: #000;
+        /* DEV CONSOLE SECTION */
+        .dev-section { display: flex; flex-direction: column; gap: 10px; margin-top: 40px; border-top: 1px solid #333; padding-top: 20px; text-align: left; }
+        .arch-info { font-size: 0.8em; color: #666; margin-bottom: 10px; border-left: 2px solid #ff0055; padding-left: 10px;}
+        #debug-panel { 
+            background: #000; border: 1px solid #333; color: #0f0; 
+            font-family: 'Consolas', 'Monaco', monospace; font-size: 11px; 
+            padding: 10px; height: 120px; overflow-y: auto; 
+            border-radius: 4px; box-shadow: inset 0 0 10px #000;
         }
+        #debug-panel h4 { margin: 0 0 5px 0; color: #00ffcc; border-bottom: 1px solid #333; padding-bottom: 5px; }
+        #debug_pre { white-space: pre-wrap; margin: 0; }
 
-        /* 1. HEADER (5% Height) */
-        .tuner-header {
-            height: 5vh;
-            max-height: 80px;
-            min-height: 50px;
-            flex-shrink: 0;
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-            padding: 0 15px;
-            background: #0d0d0d;
-            border-bottom: 1px solid #333;
-            z-index: 10;
-        }
+        /* TIME TRAVEL SCREEN */
+        #screen-time-travel { display: none; flex-direction: column; height: 100vh; width: 100vw; background: #000; }
+
+        .tuner-header { height: 5vh; max-height: 80px; min-height: 50px; flex-shrink: 0; display: flex; justify-content: space-between; align-items: center; padding: 0 15px; background: #0d0d0d; border-bottom: 1px solid #333; z-index: 10; }
         .tuner-header h2 { margin: 0; color: #ff0055; font-size: 1.2em; letter-spacing: 1px; }
 
-        /* 2. LIGHTBOX (Fills Remaining Space) */
-        .lightbox-wrapper { 
-            flex-grow: 1; 
-            margin: 10px 0; 
-            position: relative; 
-            display: flex; 
-            align-items: center; 
-            justify-content: center; 
-            overflow: hidden;
-            width: 100%;
-            background: #000;
-        }
-        
-        .stage-container {
-            position: relative;
-            display: inline-block; /* Wraps tight around image */
-        }
+        .lightbox-wrapper { flex-grow: 1; margin: 10px 0; position: relative; display: flex; align-items: center; justify-content: center; overflow: hidden; width: 100%; background: #000; }
+        .stage-container { position: relative; display: flex; justify-content: center; align-items: center; }
+        #main_canvas { max-width: 100%; max-height: 100%; width: auto; height: auto; object-fit: contain; display: block; pointer-events: none; }
 
-        #main_canvas {
-            max-width: 100%;
-            max-height: 100%;
-            width: auto;
-            height: auto;
-            object-fit: contain;
-            display: block;
-            pointer-events: none; /* Pass clicks to Lens */
-        }
-
-        /* THE LENS (Red Box) */
-        #crop-lens {
-            position: absolute;
-            top: 0; left: 0;
-            height: 100%; 
-            border: 2px solid #ff0055;
-            box-shadow: 0 0 0 9999px rgba(0, 0, 0, 0.85);
-            cursor: grab;
-            box-sizing: border-box;
-            touch-action: none;
-        }
+        /* THE LENS */
+        #crop-lens { position: absolute; top: 0; height: 100%; border: 2px solid #ff0055; box-shadow: 0 0 0 9999px rgba(0, 0, 0, 0.85); cursor: grab; box-sizing: border-box; touch-action: none; }
         #crop-lens:active { cursor: grabbing; border-color: #fff; }
 
-        /* 3. CONTROLS (25% Height) */
-        .editor-controls {
-            height: 25vh;
-            max-height: 300px;
-            min-height: 200px;
-            flex-shrink: 0;
-            background: #111;
-            padding: 15px;
-            border-top: 1px solid #333;
-            z-index: 20;
-            display: flex;
-            flex-direction: column;
-            justify-content: center;
-            box-sizing: border-box;
+        /* CONTROLS */
+        .editor-controls { 
+            height: 50vh; max-height: 550px; min-height: 400px; flex-shrink: 0; 
+            background: #111; padding: 15px; border-top: 1px solid #333; z-index: 20; 
+            display: flex; flex-direction: column; justify-content: center; box-sizing: border-box; 
+            overflow-y: auto;
         }
-
-        .control-row { display: flex; gap: 10px; margin-bottom: 10px; align-items: center; }
-        .control-row label { color: #00ffcc; font-size: 0.8em; width: 50px; flex-shrink: 0; }
+        
+        .control-row { display: flex; gap: 10px; margin-bottom: 12px; align-items: center; }
+        .control-row label { color: #00ffcc; font-size: 0.7em; width: 80px; flex-shrink: 0; text-transform: uppercase; letter-spacing: 1px; text-align:right; margin-right:5px;}
         input[type=range] { flex: 1; accent-color: #00ffcc; cursor: pointer; }
         
-        .ratio-mini-group { display: flex; gap: 5px; flex: 1; }
-        .ratio-btn { flex: 1; background: #222; border: 1px solid #444; color: #888; padding: 10px 5px; font-size: 0.75em; cursor: pointer; border-radius: 4px; }
-        .ratio-btn.active { background: #ff0055; color: white; border-color: #ff0055; }
+        .mini-group { display: flex; gap: 4px; flex: 1; flex-wrap: wrap; }
+        .mini-btn { 
+            flex: 1; min-width: 30px;
+            background: #1a1a1a; border: 1px solid #00ffcc; color: #00ffcc; 
+            padding: 6px 2px; font-size: 0.65em; cursor: pointer; 
+            border-radius: 4px; font-weight: bold; text-align: center;
+        }
+        .mini-btn.active { background: #ff0055; color: white; border-color: #ff0055; }
+        .mini-btn.disabled { border-color: #444; color: #555; cursor: not-allowed; opacity: 0.6; }
 
-        /* LOADING OVERLAY */
+        /* ADVANCED ACCORDION */
+        details { width: 100%; margin-top: 10px; border-top: 1px solid #333; padding-top: 10px; }
+        summary { color: #555; font-size: 0.8em; cursor: pointer; text-transform: uppercase; list-style: none; margin-bottom: 10px;}
+        summary::-webkit-details-marker { display: none; }
+        summary:after { content: "+ ADVANCED"; }
+        details[open] summary:after { content: "- ADVANCED"; color: #00ffcc; }
+        
+        /* DISABLED GROUP STYLE */
+        .advanced-group { opacity: 0.3; pointer-events: none; filter: grayscale(100%); }
+
         #overlay { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.92); z-index: 999; display: flex; flex-direction: column; align-items: center; justify-content: center; color:#ff0055; backdrop-filter: blur(5px); }
         .loader { border: 4px solid #333; border-top: 4px solid #ff0055; border-radius: 50%; width: 40px; height: 40px; animation: spin 1s linear infinite; margin-bottom: 15px; }
         @keyframes spin { 0% { transform: rotate(0deg); } 100% { transform: rotate(360deg); } }
@@ -134,13 +107,10 @@
 </head>
 <body>
 
-    <div id="overlay">
-        <div class="loader"></div>
-        <div id="overlay-text">BOOTING SYSTEM...</div>
-    </div>
+    <div id="overlay"><div class="loader"></div><div id="overlay-text">BOOTING SYSTEM...</div></div>
 
     <div id="screen-ingest" class="container">
-        <h1>BAALSAMIC V10.4</h1>
+        <h1>BAALSAMIC V13.1</h1>
         
         <div class="config-panel">
             <span class="config-label">Sampling Rate (FPS)</span>
@@ -158,17 +128,34 @@
             </div>
         </div>
 
-        <input type="file" id="upload" accept="video/*" class="upload-input">
-        <button class="btn-action" id="btn_stitch">GET STITCHES</button>
+        <div class="upload-container">
+            <input type="file" id="upload" accept="video/*" onchange="updateFileLabel()">
+            <label for="upload" class="btn-file" id="file-label">LOAD A FILE</label>
+            <div class="file-help">Compatible: .mp4, .mov, .webm</div>
+            <button class="btn-action" id="btn_stitch">GET STITCHES</button>
+        </div>
+
+        <div class="dev-section">
+            <div class="arch-info">
+                <strong>Architecture Note:</strong><br>
+                This tool runs 100% Client-Side using <strong>Pyodide (WASM)</strong>. 
+                Your video is processed in your browser's RAM via a localized Python environment. 
+                No data is ever uploaded to a server.
+            </div>
+            <div id="debug-panel">
+                <h4>KERNEL LOG</h4>
+                <pre id="debug_pre">Initializing...</pre>
+            </div>
+        </div>
     </div>
 
     <div id="screen-time-travel">
         <div class="tuner-header">
-            <h2>FINE TUNE</h2>
-            <button class="btn-secondary" id="close_tuner">CLOSE</button>
+            <h2>TIME TRAVEL</h2>
+            <button class="btn-secondary" id="close_tuner">BACK</button>
         </div>
         
-        <div class="lightbox-wrapper">
+        <div class="lightbox-wrapper" id="lightbox_wrapper">
             <div class="stage-container" id="stage_container">
                 <canvas id="main_canvas"></canvas>
                 <div id="crop-lens"></div>
@@ -178,11 +165,14 @@
         <div class="editor-controls">
             <div class="control-row">
                 <label>CROP</label>
-                <div class="ratio-mini-group">
-                    <button class="ratio-btn" onclick="setRatio('max')">FULL</button>
-                    <button class="ratio-btn active" onclick="setRatio('1:1')">1:1</button>
-                    <button class="ratio-btn" onclick="setRatio('16:9')">16:9</button>
-                    <button class="ratio-btn" onclick="setRatio('9:16')">9:16</button>
+                <div class="mini-group">
+                    <button class="mini-btn active" onclick="setRatio('max')">MAX</button>
+                    <button class="mini-btn" onclick="setRatio('1:1')">1:1</button>
+                    <button class="mini-btn" onclick="setRatio('4:5')">4:5</button>
+                    <button class="mini-btn" onclick="setRatio('4:3')">4:3</button>
+                    <button class="mini-btn" onclick="setRatio('3:2')">3:2</button>
+                    <button class="mini-btn" onclick="setRatio('16:9')">16:9</button>
+                    <button class="mini-btn disabled">CUST</button>
                 </div>
             </div>
 
@@ -195,12 +185,50 @@
                 <label>WIDTH</label>
                 <input type="range" id="input_width" min="1" max="200" value="12" onchange="triggerUpdate()">
             </div>
+            
             <div class="control-row">
-                <label>JITTER</label>
-                <input type="range" id="input_jitter" min="0" max="50" value="5" onchange="triggerUpdate()">
+                <label>X-JITTER</label>
+                <input type="range" id="input_xjitter" min="0" max="50" value="0" onchange="triggerUpdate()">
             </div>
 
-            <button class="btn-action" id="btn_render_final" style="margin-top:5px;">RENDER VIEW</button>
+            <div class="control-row">
+                <label>Y-JITTER</label>
+                <input type="range" id="input_yjitter" min="0" max="50" value="0" onchange="triggerUpdate()">
+            </div>
+
+            <div class="control-row">
+                <label>Z-JITTER</label>
+                <input type="range" id="input_zjitter" min="0" max="90" value="0" onchange="triggerUpdate()">
+            </div>
+
+            <button class="btn-action" id="btn_render_final" style="margin-top:10px; margin-bottom:5px;">RENDER VIEW</button>
+
+            <details>
+                <summary></summary> 
+                <div class="advanced-group">
+                    <div class="control-row">
+                        <label>SKEW</label>
+                        <input type="range" min="-45" max="45" value="0" disabled>
+                    </div>
+                    <div class="control-row">
+                        <label>PATTERN</label>
+                        <div class="mini-group">
+                            <button class="mini-btn active">NOISE</button>
+                            <button class="mini-btn">SINE</button>
+                            <button class="mini-btn">SAW</button>
+                        </div>
+                    </div>
+                    <div class="control-row">
+                        <label>SYMMETRY</label>
+                        <div class="mini-group">
+                            <button class="mini-btn active">OFF</button>
+                            <button class="mini-btn">1/3</button>
+                            <button class="mini-btn">1/2</button>
+                            <button class="mini-btn">2/3</button>
+                        </div>
+                    </div>
+                </div>
+            </details>
         </div>
     </div>
 
@@ -208,15 +236,47 @@
     <canvas id="hidden_canvas"></canvas>
 
     <script>
-    let currentRatio = '1:1';
+    // HELPER: Show filename on select
+    function updateFileLabel() {
+        const input = document.getElementById('upload');
+        const label = document.getElementById('file-label');
+        if (input.files.length > 0) {
+            label.innerText = "FILE SELECTED: " + input.files[0].name.substring(0, 20) + "...";
+            label.style.background = "#00ffcc";
+            label.style.color = "black";
+        }
+    }
+
+    // DEBUG & LOGGING
+    function dbg(msg){
+        console.log(msg);
+        const pre = document.getElementById("debug_pre");
+        if(pre) {
+            pre.textContent = (pre.textContent + "\n> " + msg).slice(-5000);
+            const panel = document.getElementById("debug-panel");
+            if(panel) panel.scrollTop = panel.scrollHeight;
+        }
+        const ov = document.getElementById("overlay");
+        if(ov && ov.style.display !== "none") {
+            document.getElementById("overlay-text").innerText = msg.toUpperCase();
+        }
+    }
+
+    // --- STANDARD JS LOGIC ---
+    window.currentRatio = 'max';
+    window.currentPattern = 'NOISE';
+    window.currentSymmetry = 'OFF';
 
     function setRatio(r) {
-        currentRatio = r;
-        document.querySelectorAll('.ratio-btn').forEach(btn => {
-            btn.classList.remove('active');
-            if(btn.innerText.toLowerCase() === r.toLowerCase() || 
-               (r === 'max' && btn.innerText === 'FULL')) {
-                btn.classList.add('active');
+        window.currentRatio = r;
+        const buttons = document.querySelectorAll('.mini-btn');
+        buttons.forEach(b => {
+            if(b.innerText.toLowerCase() === r.toLowerCase() || 
+               (r === 'max' && b.innerText === 'MAX')) {
+               if(b.parentElement.classList.contains('ratio-mini-group')) {
+                   b.parentElement.querySelectorAll('.mini-btn').forEach(sib => sib.classList.remove('active'));
+                   b.classList.add('active');
+               }
             }
         });
         
@@ -228,7 +288,6 @@
             posRow.style.opacity = '1';
             posRow.style.pointerEvents = 'auto';
         }
-        
         updateLensDimensions();
     }
 
@@ -236,7 +295,7 @@
         const canvas = document.getElementById('main_canvas');
         const lens = document.getElementById('crop-lens');
         
-        if (currentRatio === 'max') {
+        if (window.currentRatio === 'max') {
             lens.style.display = 'none';
             return;
         }
@@ -247,52 +306,44 @@
         
         let targetW = visW;
         
-        if (currentRatio === '1:1') targetW = visH; 
-        
-        // 16:9 is Wide (1.77), 9:16 is Tall (0.56)
-        if (currentRatio === '16:9') targetW = visH * (16/9); 
-        if (currentRatio === '9:16') targetW = visH * (9/16);
-
-        if (targetW > visW) targetW = visW;
+        if (window.currentRatio === '1:1') targetW = visH; 
+        if (window.currentRatio === '4:5') targetW = visH * (4/5);
+        if (window.currentRatio === '4:3') targetW = visH * (4/3);
+        if (window.currentRatio === '3:2') targetW = visH * (3/2);
+        if (window.currentRatio === '16:9') targetW = visH * (16/9); 
 
         lens.style.width = targetW + "px";
         lens.style.height = visH + "px";
-        lens.style.top = canvas.offsetTop + "px";
+        lens.style.top = canvas.offsetTop + "px"; 
         
-        // Reset position to center if range changes
-        const range = visW - targetW;
+        const range = visW - targetW; 
         const left = range / 2;
-        lens.style.left = (canvas.offsetLeft + left) + "px";
-        
-        // Sync slider
-        if(range > 0) {
-            document.getElementById('input_pos').value = 50;
-        }
+        lens.style.left = left + "px";
+        document.getElementById('input_pos').value = 50;
     }
 
     function updateLensPositionFromSlider() {
-        if (currentRatio === 'max') return;
-        const canvas = document.getElementById('main_canvas');
+        if (window.currentRatio === 'max') return;
         const lens = document.getElementById('crop-lens');
         const slider = document.getElementById('input_pos');
-        
-        const cw = canvas.clientWidth;
-        const lw = parseFloat(lens.style.width);
-        
-        const range = cw - lw;
-        const offset = (slider.value / 100) * range;
-        
-        lens.style.left = (canvas.offsetLeft + offset) + "px";
+        const wrapper = document.getElementById('lightbox_wrapper');
+        const wrapperW = wrapper.clientWidth;
+        const lensW = parseFloat(lens.style.width);
+        const range = wrapperW; 
+        const offset = ((slider.value - 50) / 100) * range;
+        const stageW = document.getElementById('stage_container').clientWidth;
+        const center = stageW / 2;
+        const newLeft = center + offset - (lensW / 2);
+        lens.style.left = newLeft + "px";
     }
 
-    // DRAG LOGIC (Touch + Mouse)
     const lens = document.getElementById('crop-lens');
     let isDragging = false;
     let startX = 0;
     let startLeft = 0;
 
     function startDrag(e) {
-        if(currentRatio === 'max') return;
+        if(window.currentRatio === 'max') return;
         isDragging = true;
         startX = (e.touches ? e.touches[0].clientX : e.clientX);
         startLeft = parseFloat(lens.style.left) || 0;
@@ -304,22 +355,7 @@
         e.preventDefault();
         const clientX = (e.touches ? e.touches[0].clientX : e.clientX);
         const delta = clientX - startX;
-        const canvas = document.getElementById('main_canvas');
-        
-        const minLeft = canvas.offsetLeft;
-        const maxLeft = minLeft + (canvas.clientWidth - parseFloat(lens.style.width));
-        
-        let newLeft = startLeft + delta;
-        if(newLeft < minLeft) newLeft = minLeft;
-        if(newLeft > maxLeft) newLeft = maxLeft;
-        
-        lens.style.left = newLeft + "px";
-        
-        // Sync slider
-        const range = maxLeft - minLeft;
-        if(range > 0) {
-            document.getElementById('input_pos').value = ((newLeft - minLeft) / range) * 100;
-        }
+        lens.style.left = (startLeft + delta) + "px";
     }
 
     function stopDrag() {
@@ -334,12 +370,6 @@
     window.addEventListener('mouseup', stopDrag);
     window.addEventListener('touchend', stopDrag);
 
-
-    function resetApp() {
-        document.getElementById('screen-time-travel').style.display = 'none';
-        document.getElementById('screen-ingest').style.display = 'flex';
-    }
-
     function triggerUpdate() {
         window.call_py("await update_preview()");
     }
@@ -350,21 +380,18 @@
 
     const PYODIDE_BASE = "https://cdn.jsdelivr.net/pyodide/v0.23.2/full/";
     
-    function setLoading(msg, show=true) {
-        const ov = document.getElementById("overlay");
-        ov.style.display = show ? "flex" : "none";
-        document.getElementById("overlay-text").innerText = msg;
-    }
-
     (function(){
+        dbg("Downloading Pyodide Engine...");
         const s = document.createElement("script");
         s.src = PYODIDE_BASE + "pyodide.js";
         s.onload = async () => {
+            dbg("Initializing WASM...");
             try {
                 window.pyodide = await loadPyodide({indexURL: PYODIDE_BASE});
+                dbg("Loading Python Kernel...");
                 window.call_py = async function(expr){ return await pyodide.runPythonAsync(expr); };
                 await initializePython();
-            } catch(e){ setLoading("INIT ERROR: " + e); }
+            } catch(e){ dbg("INIT ERROR: " + e); }
         };
         document.head.appendChild(s);
     })();
@@ -374,51 +401,94 @@
         await pyodide.runPythonAsync(code);
         
         document.getElementById("btn_stitch").onclick = async () => {
-            setLoading("LOADING VIDEO...");
+            dbg("Stitch Request Sent");
+            document.getElementById("overlay").style.display = "flex";
+            const container = document.getElementById("stage_container");
             await pyodide.runPythonAsync(`await ingest_video()`);
         };
         
+        document.getElementById("close_tuner").onclick = async () => {
+            document.getElementById("screen-time-travel").style.display = "none";
+            document.getElementById("screen-ingest").style.display = "flex";
+            dbg("Navigated Back");
+        };
+        
         document.getElementById("btn_render_final").onclick = async () => {
-            setLoading("RENDERING FINAL...");
+            document.getElementById("overlay").style.display = "flex";
+            dbg("Rendering Final...");
             
             const canvas = document.getElementById("main_canvas");
             const lens = document.getElementById("crop-lens");
             
             const scale = canvas.width / canvas.clientWidth; 
-            
             let sx = 0, sw = canvas.width;
             
-            if (currentRatio !== 'max') {
-                const canvasLeft = canvas.offsetLeft;
+            if (window.currentRatio !== 'max') {
                 const lensLeft = parseFloat(lens.style.left || 0);
-                const relativeLeft = lensLeft - canvasLeft;
-                
-                sx = relativeLeft * scale;
-                sw = parseFloat(lens.style.width) * scale;
-                
-                if(sx < 0) sx = 0;
-                if(sx + sw > canvas.width) sw = canvas.width - sx;
+                const lensWidth = parseFloat(lens.style.width || 0);
+                sx = lensLeft * scale;
+                sw = lensWidth * scale;
             }
             
             const temp = document.createElement('canvas');
             temp.width = sw;
             temp.height = canvas.height;
-            temp.getContext('2d').drawImage(canvas, sx, 0, sw, canvas.height, 0, 0, sw, canvas.height);
+            const ctx = temp.getContext('2d');
+            
+            ctx.fillStyle = "black";
+            ctx.fillRect(0, 0, temp.width, temp.height);
+            ctx.drawImage(canvas, -sx, 0); 
+            
+            // FILENAME GENERATION
+            const fileInput = document.getElementById('upload');
+            let baseName = "baalsamic_render";
+            if (fileInput.files.length > 0) {
+                let name = fileInput.files[0].name;
+                const lastDot = name.lastIndexOf('.');
+                if (lastDot !== -1) name = name.substring(0, lastDot);
+                baseName = name.substring(0, 30); // Truncate 30
+            }
+
+            const w = document.getElementById("input_width").value;
+            const x = document.getElementById("input_xjitter").value;
+            const y = document.getElementById("input_yjitter").value;
+            const z = document.getElementById("input_zjitter").value;
+
+            const filename = `BAAL_${baseName}_w${w}_x${x}_y${y}_z${z}.png`;
             
             const link = document.createElement('a');
-            link.download = 'baalsamic_v10_4.png';
+            link.download = filename;
             link.href = temp.toDataURL();
             link.click();
-            setLoading("", false);
+            document.getElementById("overlay").style.display = "none";
+            alert("Done! Saved.");
         };
 
-        setLoading("", false);
+        document.getElementById("overlay").style.display = "none";
+        dbg("System Ready. Waiting for file.");
     }
     </script>
 
     <script type="text/python" id="inline_python">
 from js import document, console, localStorage, JSON, window, setTimeout
 import asyncio, random, math
+
+# --- JITTER ENGINE ---
+jitter_seed_x = 0
+jitter_seed_y = 0
+
+def generate_jitter_values(flavor, length, intensity, seed):
+    random.seed(seed)
+    vals = [0] * length
+    if intensity == 0: return vals
+    if flavor == 'NOISE':
+        return [random.randint(-intensity, intensity) for _ in range(length)]
+    return vals
+
+def apply_symmetry(data, sym_mode):
+    return data
+
+# --- MAIN LOGIC ---
 
 current_seed = 0
 
@@ -437,7 +507,6 @@ async def ingest_video(*args):
     while not video.duration or math.isnan(video.duration):
         await asyncio.sleep(0.1)
     
-    # --- AUTO-FIT LOGIC ---
     fps = int(document.querySelector('input[name="fps"]:checked').value)
     duration = video.duration
     total_frames = max(1, int(duration * fps))
@@ -447,36 +516,45 @@ async def ingest_video(*args):
     auto_slit = max(1, min(200, auto_slit))
     
     document.getElementById("input_width").value = auto_slit
-    document.getElementById("input_jitter").value = 5
+    document.getElementById("input_xjitter").value = 0
+    document.getElementById("input_yjitter").value = 0
+    document.getElementById("input_zjitter").value = 0
     
-    # Transition
     document.getElementById("screen-ingest").style.display = "none"
     document.getElementById("screen-time-travel").style.display = "flex"
     
-    global current_seed
+    global jitter_seed_x, jitter_seed_y, current_seed
     current_seed = random.randint(100, 999)
-    await update_preview()
+    jitter_seed_x = random.randint(0, 100)
+    jitter_seed_y = random.randint(0, 100)
     
-    window.setRatio('1:1') 
+    await update_preview()
+    window.setRatio('max') 
     document.getElementById("overlay").style.display = "none"
 
 async def update_preview(*args):
     width = int(document.getElementById("input_width").value)
-    jitter = int(document.getElementById("input_jitter").value)
+    x_jitter = int(document.getElementById("input_xjitter").value)
+    y_jitter = int(document.getElementById("input_yjitter").value)
+    z_jitter = int(document.getElementById("input_zjitter").value)
     fps = int(document.querySelector('input[name="fps"]:checked').value)
     res = int(document.querySelector('input[name="res"]:checked').value)
     
-    video = document.getElementById("hidden_video")
-    await run_process(video, width, jitter, res, "main_canvas", fps, current_seed)
+    pattern = window.currentPattern
+    symmetry = window.currentSymmetry
     
-    # Force redraw of lens
+    video = document.getElementById("hidden_video")
+    await run_process(video, width, x_jitter, y_jitter, z_jitter, res, "main_canvas", fps, pattern, symmetry)
+    
     window.updateLensDimensions()
 
-async def run_process(video_elem, width, jitter, target_height, canvas_id, target_fps, seed):
+async def run_process(video_elem, width, x_jitter, y_jitter, z_jitter, target_height, canvas_id, target_fps, pattern, symmetry):
     canvas = document.getElementById("hidden_canvas")
     ctx = canvas.getContext("2d")
     out_canvas = document.getElementById(canvas_id)
     out_ctx = out_canvas.getContext("2d")
+    
+    out_ctx.imageSmoothingEnabled = False
     
     scale = 1.0
     if target_height > 0 and video_elem.videoHeight > target_height:
@@ -486,20 +564,32 @@ async def run_process(video_elem, width, jitter, target_height, canvas_id, targe
     h = int(video_elem.videoHeight * scale)
     canvas.width = w; canvas.height = h
     
-    curr_slit = max(1, int(width * scale))
-    curr_jitter = int(jitter * scale)
+    curr_slit_base = max(1, int(width * scale))
+    curr_x_int = int(x_jitter * scale)
+    curr_y_int = int(y_jitter * scale)
+    curr_z_median = z_jitter 
 
     duration = video_elem.duration
     step = 1 / target_fps
     
     total_frames = max(1, int(duration * target_fps))
     
-    out_canvas.width = total_frames * curr_slit
+    est_width = total_frames * (curr_slit_base + curr_x_int)
+    out_canvas.width = est_width
     out_canvas.height = h
+    
+    x_vals = generate_jitter_values(pattern, total_frames + 20, curr_x_int, jitter_seed_x)
+    y_vals = generate_jitter_values(pattern, total_frames + 20, curr_y_int, jitter_seed_y)
+    
+    x_vals = apply_symmetry(x_vals, symmetry)
+    y_vals = apply_symmetry(y_vals, symmetry)
     
     current_time = 0.0
     x_pos = 0
-    random.seed(seed)
+    frame_idx = 0
+    
+    out_ctx.fillStyle = "black"
+    out_ctx.fillRect(0, 0, est_width, h)
     
     while current_time < duration:
         video_elem.currentTime = current_time
@@ -507,17 +597,60 @@ async def run_process(video_elem, width, jitter, target_height, canvas_id, targe
         try: ctx.drawImage(video_elem, 0, 0, w, h)
         except: break
         
-        offset = random.randint(-curr_jitter, curr_jitter)
-        center_x = (w // 2) + offset
-        start_x = max(0, min(w - curr_slit, center_x))
+        y_off = 0
+        x_var = 0
+        if frame_idx < len(y_vals):
+            y_off = y_vals[frame_idx]
+            x_var = x_vals[frame_idx]
+            
+        center_x = (w // 2) + y_off
         
-        try: out_ctx.drawImage(canvas, start_x, 0, curr_slit, h, x_pos, 0, curr_slit, h)
-        except: break
+        this_slit_base = curr_slit_base + x_var
+        this_slit_base = max(1, this_slit_base)
+        
+        start_x = max(0, min(w - this_slit_base, center_x))
+        
+        angle = 0
+        if curr_z_median > 0:
+            angle = random.uniform(-curr_z_median, curr_z_median)
+        
+        if angle == 0:
+            try: out_ctx.drawImage(canvas, start_x, 0, this_slit_base, h, x_pos, 0, this_slit_base, h)
+            except: break
+        else:
+            rads = math.radians(angle)
+            gap_w = abs(h * math.sin(rads))
+            expansion = (gap_w * 1.5) + 4
+            expanded_w = this_slit_base + expansion
+            
+            src_start_x = center_x - (expanded_w / 2)
+            if src_start_x < 0: src_start_x = 0
+            if src_start_x + expanded_w > w: src_start_x = w - expanded_w
+            
+            fill_bias = random.uniform(-0.5, 0.5) 
+            offset_dest_x = (gap_w * fill_bias)
+
+            out_ctx.save()
+            draw_center_x = x_pos + (this_slit_base / 2)
+            draw_center_y = h / 2
+            out_ctx.translate(draw_center_x, draw_center_y)
+            out_ctx.rotate(rads)
+            
+            try: out_ctx.drawImage(canvas, src_start_x, 0, expanded_w, h, -expanded_w/2 + offset_dest_x, -h/2, expanded_w, h)
+            except: pass
+            out_ctx.restore()
         
         current_time += step
-        x_pos += curr_slit
+        x_pos += this_slit_base
+        frame_idx += 1
         
-        if x_pos % 200 == 0: await asyncio.sleep(0.001)
+        if frame_idx % 200 == 0: await asyncio.sleep(0.001)
+    
+    final_w = x_pos
+    if final_w > 0:
+        temp = out_ctx.getImageData(0, 0, final_w, h)
+        out_canvas.width = final_w
+        out_ctx.putImageData(temp, 0, 0)
 
     </script>
 </body>
