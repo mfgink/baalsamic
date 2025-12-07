@@ -3,9 +3,10 @@
 <head>
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width,initial-scale=1" />
-    <title>Baalsamic V7.6 (Telemetry)</title>
+    <title>Baalsamic V8</title>
 
     <style>
+        /* BASE STYLES */
         body { background: #0d0d0d; color: #ccc; font-family: monospace; padding: 20px; text-align: center; margin-bottom: 300px; }
         h1 { color: #ff0055; letter-spacing: 2px; text-transform: uppercase; margin-bottom: 20px; }
         
@@ -17,55 +18,59 @@
         .config-group { margin-bottom: 15px; }
         .config-label { color: #ff0055; font-weight: bold; display: block; margin-bottom: 5px; font-size: 0.8em; text-transform: uppercase; }
         
-        .radio-group { display: flex; gap: 10px; }
-        .radio-option { flex: 1; position: relative; }
+        /* RADIO BUTTONS */
+        .radio-group { display: flex; gap: 10px; flex-wrap: wrap; }
+        .radio-option { flex: 1; position: relative; min-width: 60px; }
         .radio-option input { opacity: 0; position: absolute; width: 100%; height: 100%; cursor: pointer; }
-        .radio-tile { display: flex; flex-direction: column; align-items: center; justify-content: center; background: #222; border: 1px solid #444; padding: 10px; border-radius: 4px; transition: 0.2s; }
+        .radio-tile { 
+            display: flex; flex-direction: column; align-items: center; justify-content: center; 
+            background: #222; border: 1px solid #444; padding: 10px; border-radius: 4px; transition: 0.2s; 
+            height: 100%; box-sizing: border-box;
+        }
         .radio-option input:checked + .radio-tile { background: #ff0055; color: white; border-color: #ff0055; }
+        .radio-label { font-size: 0.9em; font-weight: bold; }
         
-        .upload-container { margin-bottom: 20px; }
-        input[type=file] { padding: 10px; background: #222; width: 100%; border: 1px solid #333; color: #eee; }
+        /* CUSTOM RATIO INPUTS (Hidden by default) */
+        #custom-ratio-box { display: none; gap: 10px; margin-top: 10px; align-items: center; }
+        .ratio-input { background: #222; border: 1px solid #444; color: #fff; padding: 8px; width: 60px; text-align: center; border-radius: 4px; }
+        .ratio-x { color: #555; font-weight: bold; }
+
+        /* UPLOAD & ACTION */
+        .upload-container { margin-bottom: 20px; width: 100%; }
+        /* Fix for file input extending past container */
+        input[type=file] { 
+            padding: 10px; background: #222; border: 1px solid #333; color: #eee; 
+            width: 100%; box-sizing: border-box; border-radius: 4px;
+        }
         
-        .btn-action { width: 100%; background: #00ffcc; color: black; border: none; padding: 15px; font-size: 1.2em; font-weight: bold; cursor: pointer; text-transform: uppercase; letter-spacing: 1px; margin-top: 10px; }
+        .btn-action { 
+            width: 100%; background: #00ffcc; color: black; border: none; padding: 15px; 
+            font-size: 1.2em; font-weight: bold; cursor: pointer; text-transform: uppercase; 
+            letter-spacing: 1px; margin-top: 10px; border-radius: 4px;
+        }
         
-        /* LOADING OVERLAY - TELEMETRY STYLE */
+        /* LOADING OVERLAY */
         #overlay { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.92); z-index: 999; display: flex; flex-direction: column; align-items: center; justify-content: center; color:#ff0055; transition: opacity 0.5s; backdrop-filter: blur(5px); }
         .loader { border: 4px solid #333; border-top: 4px solid #ff0055; border-radius: 50%; width: 40px; height: 40px; animation: spin 1s linear infinite; margin-bottom: 15px; }
         @keyframes spin { 0% { transform: rotate(0deg); } 100% { transform: rotate(360deg); } }
-        #overlay-text { 
-            font-family: 'Courier New', Courier, monospace; 
-            font-size: 1em; 
-            color: #00ffcc; 
-            max-width: 80%;
-            text-align: center;
-            line-height: 1.5;
-        }
+        #overlay-text { font-family: monospace; font-size: 1.2em; color: #00ffcc; }
         
-        /* GALLERY */
+        /* GALLERY & TUNER */
         .gallery { display: flex; flex-direction: column; gap: 20px; margin-top: 30px; }
         .card { background: #1a1a1a; border: 1px solid #333; padding: 10px; text-align: left; }
         .card-header { display: flex; justify-content: space-between; color: #555; font-size: 0.8em; margin-bottom: 5px; }
-        .card canvas { width: 100%; height: 100px; object-fit: cover; border: 1px solid #444; cursor: pointer; }
+        .card canvas { width: 100%; height: auto; max-height: 300px; object-fit: contain; border: 1px solid #444; cursor: pointer; background: #000; }
 
-        /* TUNER MODAL */
         #tuner-view { display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: #0d0d0d; z-index: 100; padding: 20px; overflow-y: auto; box-sizing: border-box; }
         .tuner-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px; border-bottom: 1px solid #333; padding-bottom: 10px; }
         .tuner-controls { background: #1a1a1a; padding: 15px; border-radius: 8px; margin-top: 20px; text-align: left; }
         input[type=range] { width: 100%; margin: 10px 0; accent-color: #00ffcc; }
-        .btn-secondary { background: #333; color: #ccc; width: 100%; padding: 10px; border: 1px solid #555; margin-top: 10px; cursor: pointer; }
+        .btn-secondary { background: #333; color: #ccc; width: 100%; padding: 10px; border: 1px solid #555; margin-top: 10px; cursor: pointer; border-radius: 4px; }
 
-        /* DEV CONSOLE SECTION */
+        /* DEV CONSOLE */
         .dev-section { display: flex; flex-direction: column; gap: 10px; margin-top: 40px; border-top: 1px solid #333; padding-top: 20px; text-align: left; }
-        .arch-info { font-size: 0.8em; color: #666; margin-bottom: 10px; line-height: 1.4; border-left: 2px solid #ff0055; padding-left: 10px;}
-        .arch-info strong { color: #ccc; }
-        
-        #debug-panel { 
-            background: #000; border: 1px solid #333; color: #0f0; 
-            font-family: 'Consolas', 'Monaco', monospace; font-size: 11px; 
-            padding: 10px; height: 150px; overflow-y: auto; 
-            border-radius: 4px; box-shadow: inset 0 0 10px #000;
-        }
-        #debug-panel h4 { margin: 0 0 5px 0; color: #00ffcc; border-bottom: 1px solid #333; padding-bottom: 5px; }
+        .arch-info { font-size: 0.8em; color: #666; margin-bottom: 10px; border-left: 2px solid #ff0055; padding-left: 10px;}
+        #debug-panel { background: #000; border: 1px solid #333; color: #0f0; font-family: monospace; font-size: 11px; padding: 10px; height: 150px; overflow-y: auto; border-radius: 4px; }
         #debug_pre { white-space: pre-wrap; margin: 0; }
 
         video { display: none; }
@@ -79,23 +84,39 @@
     </div>
 
     <div id="main-view" class="container">
-        <h1>BAALSAMIC V7.6</h1>
+        <h1>BAALSAMIC V8</h1>
 
         <div class="config-panel">
             <div class="config-group">
                 <span class="config-label">Sampling Rate (FPS)</span>
                 <div class="radio-group">
-                    <div class="radio-option"><input type="radio" name="fps" value="15" checked><div class="radio-tile"><span>15</span></div></div>
-                    <div class="radio-option"><input type="radio" name="fps" value="30"><div class="radio-tile"><span>30</span></div></div>
-                    <div class="radio-option"><input type="radio" name="fps" value="60"><div class="radio-tile"><span>60</span></div></div>
+                    <div class="radio-option"><input type="radio" name="fps" value="15" checked><div class="radio-tile"><span class="radio-label">15</span></div></div>
+                    <div class="radio-option"><input type="radio" name="fps" value="30"><div class="radio-tile"><span class="radio-label">30</span></div></div>
+                    <div class="radio-option"><input type="radio" name="fps" value="60"><div class="radio-tile"><span class="radio-label">60</span></div></div>
                 </div>
             </div>
+            
             <div class="config-group">
                 <span class="config-label">Resolution</span>
                 <div class="radio-group">
-                    <div class="radio-option"><input type="radio" name="res" value="720"><div class="radio-tile"><span>SD</span></div></div>
-                    <div class="radio-option"><input type="radio" name="res" value="1080"><div class="radio-tile"><span>HD</span></div></div>
-                    <div class="radio-option"><input type="radio" name="res" value="0" checked><div class="radio-tile"><span>4K</span></div></div>
+                    <div class="radio-option"><input type="radio" name="res" value="720"><div class="radio-tile"><span class="radio-label">SD</span></div></div>
+                    <div class="radio-option"><input type="radio" name="res" value="1080"><div class="radio-tile"><span class="radio-label">HD</span></div></div>
+                    <div class="radio-option"><input type="radio" name="res" value="0" checked><div class="radio-tile"><span class="radio-label">4K</span></div></div>
+                </div>
+            </div>
+
+            <div class="config-group">
+                <span class="config-label">Aspect Ratio (Stop Condition)</span>
+                <div class="radio-group">
+                    <div class="radio-option"><input type="radio" name="ratio" value="max" checked onchange="toggleCustom(false)"><div class="radio-tile"><span class="radio-label">MAX</span></div></div>
+                    <div class="radio-option"><input type="radio" name="ratio" value="1:1" onchange="toggleCustom(false)"><div class="radio-tile"><span class="radio-label">1:1</span></div></div>
+                    <div class="radio-option"><input type="radio" name="ratio" value="16:9" onchange="toggleCustom(false)"><div class="radio-tile"><span class="radio-label">16:9</span></div></div>
+                    <div class="radio-option"><input type="radio" name="ratio" value="custom" onchange="toggleCustom(true)"><div class="radio-tile"><span class="radio-label">CUSTOM</span></div></div>
+                </div>
+                <div id="custom-ratio-box">
+                    <input type="number" id="ratio_x" class="ratio-input" placeholder="X" min="1">
+                    <span class="ratio-x">:</span>
+                    <input type="number" id="ratio_y" class="ratio-input" placeholder="Y" min="1">
                 </div>
             </div>
         </div>
@@ -109,16 +130,8 @@
         <button id="btn_reshuffle" class="btn-secondary" style="display:none">RESHUFFLE SEEDS 🎲</button>
 
         <div class="dev-section">
-            <div class="arch-info">
-                <strong>Architecture Note:</strong><br>
-                This tool runs 100% Client-Side using <strong>Pyodide (WASM)</strong>. 
-                Your video is processed in your browser's RAM via a localized Python environment. 
-                No data is ever uploaded to a server.
-            </div>
-            <div id="debug-panel">
-                <h4>KERNEL LOG</h4>
-                <pre id="debug_pre">Initializing...</pre>
-            </div>
+            <div class="arch-info"><strong>Architecture Note:</strong> Client-Side Processing (Pyodide/WASM).</div>
+            <div id="debug-panel"><h4>KERNEL LOG</h4><pre id="debug_pre">Initializing...</pre></div>
         </div>
     </div>
 
@@ -127,11 +140,11 @@
             <h2>FINE TUNE</h2>
             <button class="btn-secondary" style="width: auto; padding: 5px 15px;" id="close_tuner">CLOSE</button>
         </div>
-        <canvas id="tuner_canvas" style="width:100%; height: 150px; border: 1px solid #00ffcc;"></canvas>
+        <canvas id="tuner_canvas" style="width:100%; height: auto; max-height: 60vh; object-fit: contain; border: 1px solid #00ffcc;"></canvas>
         <div class="tuner-controls">
-            <span class="config-label">Slit Width (Chunkiness)</span>
+            <span class="config-label">Slit Width</span>
             <input type="range" id="tuner_width" min="1" max="100">
-            <span class="config-label">Jitter (Chaos)</span>
+            <span class="config-label">Jitter</span>
             <input type="range" id="tuner_jitter" min="0" max="50">
         </div>
         <button class="btn-action" id="render_final">RENDER FINAL</button>
@@ -141,17 +154,16 @@
     <canvas id="hidden_canvas"></canvas>
 
     <script>
+    // JS Helper to toggle custom inputs
+    function toggleCustom(show) {
+        document.getElementById('custom-ratio-box').style.display = show ? 'flex' : 'none';
+    }
+
     function dbg(msg){
-        console.log(msg);
         const pre = document.getElementById("debug_pre");
         pre.textContent = (pre.textContent + "\n> " + msg).slice(-5000);
-        // Scroll to bottom
-        const panel = document.getElementById("debug-panel");
-        panel.scrollTop = panel.scrollHeight;
-        
-        // UPDATE OVERLAY (If Visible)
-        const overlay = document.getElementById("overlay");
-        if(overlay && overlay.style.display !== "none") {
+        document.getElementById("debug-panel").scrollTop = document.getElementById("debug-panel").scrollHeight;
+        if(document.getElementById("overlay").style.display !== "none") {
             document.getElementById("overlay-text").innerText = msg.toUpperCase();
         }
     }
@@ -159,25 +171,16 @@
     const PYODIDE_BASE = "https://cdn.jsdelivr.net/pyodide/v0.23.2/full/";
 
     (function(){
-        dbg("Downloading Pyodide Engine...");
+        dbg("Downloading Engine...");
         const s = document.createElement("script");
         s.src = PYODIDE_BASE + "pyodide.js";
         s.onload = async () => {
-            dbg("Initializing WASM...");
             try {
                 window.pyodide = await loadPyodide({indexURL: PYODIDE_BASE});
-                dbg("Loading Python Kernel...");
-                
-                window.call_py = async function(expr){
-                    try{ return await pyodide.runPythonAsync(expr); } 
-                    catch(err){ dbg("PY ERROR: " + err); throw err; }
-                };
+                window.call_py = async function(expr){ return await pyodide.runPythonAsync(expr); };
                 await initializePythonFromScript();
-            } catch(e){
-                dbg("CRITICAL INIT ERROR: " + e);
-            }
+            } catch(e){ dbg("INIT ERROR: " + e); }
         };
-        s.onerror = (ev)=>{ dbg("Failed to load pyodide.js"); };
         document.head.appendChild(s);
     })();
 
@@ -185,25 +188,16 @@
         const pyScriptEl = document.getElementById("inline_python");
         try{
             await pyodide.runPythonAsync(pyScriptEl.textContent);
-            dbg("Python Logic Loaded.");
-        } catch(err){
-            dbg("Script Load Error: " + err);
-        }
+            dbg("System Ready.");
+            document.getElementById("overlay").style.display = "none";
+        } catch(err){ dbg("Load Error: " + err); }
 
-        // Wire Buttons
         document.getElementById("btn_stitch").onclick = async () => {
-            try{
-                document.getElementById("overlay").style.display = "flex";
-                dbg("Processing Video...");
-                await pyodide.runPythonAsync("await start_stitching()");
-            } catch(err){
-                dbg("Stitch Error: " + err);
-                document.getElementById("overlay").style.display = "none";
-            }
+            document.getElementById("overlay").style.display = "flex";
+            await pyodide.runPythonAsync("await start_stitching()");
         };
         document.getElementById("btn_reshuffle").onclick = async () => {
             document.getElementById("overlay").style.display = "flex";
-            dbg("Reshuffling...");
             await pyodide.runPythonAsync("await reshuffle()");
         };
         document.getElementById("close_tuner").onclick = async () => {
@@ -211,13 +205,8 @@
         };
         document.getElementById("render_final").onclick = async () => {
             document.getElementById("overlay").style.display = "flex";
-            dbg("Rendering High-Res...");
             await pyodide.runPythonAsync("await render_from_tuner()");
         };
-        
-        // UNLOCK UI
-        document.getElementById("overlay").style.display = "none";
-        dbg("You're ready to get stitches.");
     }
     </script>
 
@@ -227,17 +216,33 @@ import asyncio, random, math
 
 def dbg(msg):
     console.log("[PY] " + str(msg))
-    # Python logs also update the JS overlay via DOM
     ov = document.getElementById("overlay")
     if ov and ov.style.display != "none":
         document.getElementById("overlay-text").innerText = str(msg).upper()
 
+# --- RATIO LOGIC ---
+def get_target_ratio():
+    # Returns float (width / height) or None for MAX
+    mode = document.querySelector('input[name="ratio"]:checked').value
+    if mode == "max": return None
+    if mode == "1:1": return 1.0
+    if mode == "16:9": return 16/9
+    if mode == "custom":
+        try:
+            x = float(document.getElementById("ratio_x").value)
+            y = float(document.getElementById("ratio_y").value)
+            return x / y
+        except:
+            return None # Fallback to max on error
+    return None
+
 # --- PERSISTENCE ---
 def load_config():
     try:
-        data = localStorage.getItem("baalsamic_v6_config")
+        data = localStorage.getItem("baalsamic_v8_config")
         if data:
             config = JSON.parse(data)
+            # Restore FPS/RES logic (same as before)
             fps_val = str(config.get("fps", "15"))
             res_val = str(config.get("res", "0"))
             for r in document.getElementsByName("fps"):
@@ -248,21 +253,17 @@ def load_config():
 
 def save_config(*args):
     try:
-        fps_val = document.querySelector('input[name="fps"]:checked').value
-        res_val = document.querySelector('input[name="res"]:checked').value
-        config = {"fps": fps_val, "res": res_val}
-        localStorage.setItem("baalsamic_v6_config", JSON.stringify(config))
+        fps = document.querySelector('input[name="fps"]:checked').value
+        res = document.querySelector('input[name="res"]:checked').value
+        config = {"fps": fps, "res": res}
+        localStorage.setItem("baalsamic_v8_config", JSON.stringify(config))
     except: pass
 
-for el in document.getElementsByName("fps"):
-    el.addEventListener("change", lambda ev: save_config())
-for el in document.getElementsByName("res"):
-    el.addEventListener("change", lambda ev: save_config())
-
+for el in document.getElementsByName("fps"): el.addEventListener("change", lambda ev: save_config())
+for el in document.getElementsByName("res"): el.addEventListener("change", lambda ev: save_config())
 load_config()
 
 # --- STATE ---
-current_video_file = None
 current_seed_configs = {}
 current_tuner_seed = 0
 
@@ -273,13 +274,13 @@ def create_div_with_canvas(seed):
     return div
 
 async def start_stitching(*args):
-    upload_input = document.getElementById("upload")
-    if not upload_input.files.length:
+    upload = document.getElementById("upload")
+    if not upload.files.length:
         window.alert("Select a video first.")
         document.getElementById("overlay").style.display = "none"
         return
     
-    file = upload_input.files.item(0)
+    file = upload.files.item(0)
     url = window.URL.createObjectURL(file)
     video = document.getElementById("hidden_video")
     video.src = url
@@ -289,7 +290,6 @@ async def start_stitching(*args):
         await asyncio.sleep(0.1)
         tries += 1
         if tries > 200:
-            console.log("Timeout on metadata")
             document.getElementById("overlay").style.display = "none"
             return
     
@@ -306,23 +306,19 @@ async def generate_contact_sheet(video_elem, target_fps):
     gallery = document.getElementById("gallery")
     gallery.innerHTML = ""
     current_seed_configs.clear()
-
+    
     seeds = [random.randint(100, 999) for _ in range(3)]
-    base_factor = 60 / target_fps
-
+    base_factor = 60 / target_fps 
+    
     for i, seed in enumerate(seeds):
         random.seed(seed)
         base_w = random.randint(2, 8)
-        cfg = {
-            "width": int(base_w * base_factor),
-            "jitter": random.randint(0, int(20 * base_factor))
-        }
+        cfg = { "width": int(base_w * base_factor), "jitter": random.randint(0, int(20 * base_factor)) }
         current_seed_configs[seed] = cfg
-
+        
         div = create_div_with_canvas(seed)
         gallery.appendChild(div)
         await asyncio.sleep(0.02)
-        
         dbg(f"Stitching Var #{seed}...")
         await run_process(video_elem, cfg["width"], cfg["jitter"], 150, f"cvs_{seed}", target_fps, seed)
 
@@ -331,79 +327,83 @@ async def run_process(video_elem, width, jitter, target_height, canvas_id, targe
     ctx = canvas.getContext("2d")
     out_canvas = document.getElementById(canvas_id)
     out_ctx = out_canvas.getContext("2d")
-
+    
     scale = 1.0
     if target_height > 0 and video_elem.videoHeight > target_height:
         scale = target_height / video_elem.videoHeight
-
+    
     w = int(video_elem.videoWidth * scale)
     h = int(video_elem.videoHeight * scale)
-    canvas.width = w
-    canvas.height = h
+    canvas.width = w; canvas.height = h
+    
+    # Calculate MAX WIDTH based on Ratio
+    ratio = get_target_ratio()
+    max_output_width = 99999
+    if ratio:
+        max_output_width = int(h * ratio)
 
     curr_slit = max(1, int(width * scale))
     curr_jitter = int(jitter * scale)
 
     duration = video_elem.duration
     step = 1 / target_fps
-    total_frames = int(duration * target_fps) if duration and not math.isnan(duration) else 1
-    out_canvas.width = max(1, total_frames * curr_slit)
+    
+    # Total frames is EITHER time duration OR width limit
+    time_frames = int(duration * target_fps)
+    width_frames = int(max_output_width / curr_slit)
+    
+    total_frames = min(time_frames, width_frames)
+    
+    out_canvas.width = total_frames * curr_slit
     out_canvas.height = h
-
+    
     current_time = 0.0
     x_pos = 0
     random.seed(seed)
     
-    # Track Progress
-    cols_processed = 0
+    processed_cols = 0
 
-    while current_time < duration:
+    while processed_cols < total_frames:
         video_elem.currentTime = current_time
-        await asyncio.sleep(0.04) # Allow browser to breathe
-        try:
-            ctx.drawImage(video_elem, 0, 0, w, h)
-        except Exception as e:
-            break
-
+        await asyncio.sleep(0.04)
+        
+        try: ctx.drawImage(video_elem, 0, 0, w, h)
+        except: break
+        
         offset = random.randint(-curr_jitter, curr_jitter)
         center_x = (w // 2) + offset
         start_x = max(0, min(w - curr_slit, center_x))
-        try:
-            out_ctx.drawImage(canvas, start_x, 0, curr_slit, h, x_pos, 0, curr_slit, h)
-        except Exception as e:
-            break
-
+        
+        try: out_ctx.drawImage(canvas, start_x, 0, curr_slit, h, x_pos, 0, curr_slit, h)
+        except: break
+        
         current_time += step
         x_pos += curr_slit
-        cols_processed += 1
+        processed_cols += 1
         
-        # TELEMETRY UPDATE (Every 50 frames)
-        if cols_processed % 50 == 0:
-            percent = int((current_time / duration) * 100)
-            # Update JS overlay directly from Python loop
-            document.getElementById("overlay-text").innerText = f"PROCESSING {percent}% | COL: {cols_processed}"
+        if processed_cols % 50 == 0:
+            pct = int((processed_cols / total_frames) * 100)
+            dbg(f"Processing... {pct}%")
             await asyncio.sleep(0.001)
 
-    def open_tuner_handler(ev):
-        open_tuner(seed)
+    def open_tuner_handler(ev): open_tuner(seed)
     out_canvas.onclick = open_tuner_handler
 
+# --- TUNER & RENDER FINAL ---
+current_tuner_seed = 0
 def open_tuner(seed):
     global current_tuner_seed
     current_tuner_seed = seed
     cfg = current_seed_configs[seed]
-
     document.getElementById("tuner_width").value = cfg["width"]
     document.getElementById("tuner_jitter").value = cfg["jitter"]
-
     document.getElementById("main-view").style.display = "none"
     document.getElementById("tuner-view").style.display = "block"
-
-    src_cvs = document.getElementById(f"cvs_{seed}")
-    dest_cvs = document.getElementById("tuner_canvas")
-    dest_cvs.width = src_cvs.width
-    dest_cvs.height = src_cvs.height
-    dest_cvs.getContext("2d").drawImage(src_cvs, 0, 0)
+    # Copy low-res preview to tuner canvas
+    src = document.getElementById(f"cvs_{seed}")
+    dest = document.getElementById("tuner_canvas")
+    dest.width = src.width; dest.height = src.height
+    dest.getContext("2d").drawImage(src, 0, 0)
 
 def close_tuner():
     document.getElementById("tuner-view").style.display = "none"
@@ -415,7 +415,6 @@ async def render_from_tuner(*args):
     fps = int(document.querySelector('input[name="fps"]:checked').value)
     res = int(document.querySelector('input[name="res"]:checked').value)
     video = document.getElementById("hidden_video")
-
     await run_process(video, width, jitter, res, "tuner_canvas", fps, current_tuner_seed)
     document.getElementById("overlay").style.display = "none"
     window.alert("Done! Long-press image to save.")
