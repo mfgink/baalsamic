@@ -2,18 +2,18 @@
 <html lang="en">
 <head>
     <meta charset="utf-8" />
-    <meta name="viewport" content="width=device-width,initial-scale=1" />
-    <title>Baalsamic V13.1</title>
+    <meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,user-scalable=no" />
+    <title>Baalsamic V17.1</title>
 
     <style>
-        /* BASE */
-        body { background: #0d0d0d; color: #ccc; font-family: monospace; padding: 0; margin: 0; height: 100vh; width: 100vw; overflow: hidden; }
+        /* --- BASE --- */
+        body { background: #0d0d0d; color: #ccc; font-family: monospace; padding: 0; margin: 0; height: 100vh; width: 100vw; overflow: hidden; position: fixed; }
         h1 { color: #ff0055; letter-spacing: 2px; text-transform: uppercase; margin: 20px 0; font-size: 1.5em; text-align: center; }
         
-        /* LAYOUT UTILS */
+        /* --- LAYOUT UTILS --- */
         .container { max-width: 600px; margin: 0 auto; width: 100%; padding: 20px; box-sizing: border-box;}
         
-        /* INGEST SCREEN */
+        /* --- SCREEN: INGEST --- */
         #screen-ingest { display: flex; flex-direction: column; height: 100%; overflow-y: auto; }
 
         .config-panel { background: #1a1a1a; padding: 15px; border: 1px solid #333; border-radius: 8px; margin-bottom: 20px; text-align: left; }
@@ -24,8 +24,8 @@
         .radio-tile { display: flex; align-items: center; justify-content: center; background: #222; border: 1px solid #444; padding: 12px; border-radius: 4px; transition: 0.2s; }
         .radio-option input:checked + .radio-tile { background: #ff0055; color: white; border-color: #ff0055; }
         
-        /* FILE UPLOAD STYLING */
-        #upload { display: none; } /* Hide default input */
+        /* FILE UPLOAD */
+        #upload { display: none; }
         .btn-file { 
             display: block; width: 100%; box-sizing: border-box;
             background: #ff0055; color: white; 
@@ -34,75 +34,185 @@
             margin-bottom: 5px; transition: 0.2s;
         }
         .btn-file:hover { background: #d40045; }
-        .file-help { color: #666; font-size: 0.8em; margin-bottom: 20px; }
+        .file-help { color: #666; font-size: 0.8em; margin-bottom: 20px; text-align: center;}
 
         .btn-action { width: 100%; background: #00ffcc; color: black; border: none; padding: 15px; font-size: 1.2em; font-weight: bold; cursor: pointer; text-transform: uppercase; letter-spacing: 1px; border-radius: 4px; }
-        .btn-secondary { background: #333; color: #ccc; border: 1px solid #555; padding: 8px 15px; cursor: pointer; border-radius: 4px; font-size: 0.9em; white-space: nowrap;}
+        
+        /* --- HEADER BUTTONS --- */
+        .header-buttons { display: flex; gap: 8px; align-items: center; }
 
-        /* DEV CONSOLE SECTION */
-        .dev-section { display: flex; flex-direction: column; gap: 10px; margin-top: 40px; border-top: 1px solid #333; padding-top: 20px; text-align: left; }
-        .arch-info { font-size: 0.8em; color: #666; margin-bottom: 10px; border-left: 2px solid #ff0055; padding-left: 10px;}
-        #debug-panel { 
-            background: #000; border: 1px solid #333; color: #0f0; 
-            font-family: 'Consolas', 'Monaco', monospace; font-size: 11px; 
-            padding: 10px; height: 120px; overflow-y: auto; 
-            border-radius: 4px; box-shadow: inset 0 0 10px #000;
+        .btn-secondary { background: #333; color: #ccc; border: 1px solid #555; padding: 8px 12px; cursor: pointer; border-radius: 4px; font-size: 0.75em; white-space: nowrap; font-weight: bold; }
+        
+        .btn-radical { background: #333; color: #ccc; border: 1px solid #555; padding: 8px 12px; cursor: pointer; border-radius: 4px; font-size: 0.75em; white-space: nowrap; font-weight: bold; }
+        .btn-radical.active { background: #ff0055; color: white; border-color: #ff0055; }
+
+        .btn-render-small { 
+            background: #00ffcc; color: black; border: none; 
+            padding: 8px 12px; cursor: pointer; border-radius: 4px; 
+            font-size: 0.75em; white-space: nowrap; font-weight: bold; 
+            text-transform: uppercase;
         }
-        #debug-panel h4 { margin: 0 0 5px 0; color: #00ffcc; border-bottom: 1px solid #333; padding-bottom: 5px; }
-        #debug_pre { white-space: pre-wrap; margin: 0; }
 
-        /* TIME TRAVEL SCREEN */
+        /* --- SCREEN: TIME TRAVEL --- */
         #screen-time-travel { display: none; flex-direction: column; height: 100vh; width: 100vw; background: #000; }
 
-        .tuner-header { height: 5vh; max-height: 80px; min-height: 50px; flex-shrink: 0; display: flex; justify-content: space-between; align-items: center; padding: 0 15px; background: #0d0d0d; border-bottom: 1px solid #333; z-index: 10; }
-        .tuner-header h2 { margin: 0; color: #ff0055; font-size: 1.2em; letter-spacing: 1px; }
+        .tuner-header { 
+            height: 60px; flex-shrink: 0; 
+            display: flex; justify-content: space-between; align-items: center; 
+            padding: 0 15px; background: #0d0d0d; border-bottom: 1px solid #333; z-index: 10; 
+        }
+        .tuner-header h2 { margin: 0; color: #ff0055; font-size: 1.1em; letter-spacing: 1px; }
 
-        .lightbox-wrapper { flex-grow: 1; margin: 10px 0; position: relative; display: flex; align-items: center; justify-content: center; overflow: hidden; width: 100%; background: #000; }
-        .stage-container { position: relative; display: flex; justify-content: center; align-items: center; }
-        #main_canvas { max-width: 100%; max-height: 100%; width: auto; height: auto; object-fit: contain; display: block; pointer-events: none; }
+        /* LIGHTBOX FIX */
+        .lightbox-wrapper { 
+            flex: 1; 
+            min-height: 0; 
+            margin: 10px 0; 
+            position: relative; 
+            display: flex; 
+            align-items: center; 
+            justify-content: center; 
+            overflow: hidden; 
+            width: 100%; 
+            background: #000; 
+        }
+        .stage-container { 
+            position: relative; 
+            display: flex; 
+            justify-content: center; 
+            align-items: center; 
+            width: 100%; 
+            height: 100%; 
+        }
+        #main_canvas { 
+            max-width: 100%; 
+            max-height: 100%; 
+            width: auto; 
+            height: auto; 
+            object-fit: contain; 
+            display: block; 
+            pointer-events: none; 
+        }
 
-        /* THE LENS */
-        #crop-lens { position: absolute; top: 0; height: 100%; border: 2px solid #ff0055; box-shadow: 0 0 0 9999px rgba(0, 0, 0, 0.85); cursor: grab; box-sizing: border-box; touch-action: none; }
+        /* CROP LENS */
+        #crop-lens { 
+            position: absolute; top: 0; height: 100%; border: 2px solid #ff0055; 
+            box-shadow: 0 0 0 9999px rgba(0, 0, 0, 0.85); cursor: grab; box-sizing: border-box; touch-action: none; 
+        }
         #crop-lens:active { cursor: grabbing; border-color: #fff; }
 
         /* CONTROLS */
         .editor-controls { 
-            height: 50vh; max-height: 550px; min-height: 400px; flex-shrink: 0; 
-            background: #111; padding: 15px; border-top: 1px solid #333; z-index: 20; 
-            display: flex; flex-direction: column; justify-content: center; box-sizing: border-box; 
-            overflow-y: auto;
+            flex: 1;                
+            max-height: 50dvh;      
+            min-height: 250px;      
+            flex-shrink: 0; 
+            background: #111; 
+            border-top: 1px solid #333; 
+            z-index: 20; 
+            display: flex; 
+            flex-direction: column; 
+            padding: 0;
+            box-sizing: border-box;
         }
-        
+
+        .controls-scroll {
+            flex-grow: 1;
+            overflow-y: auto;
+            padding: 15px 0;
+            padding-bottom: 40px; 
+        }
+
+        /* ACCORDIONS */
+        details { width: 100%; border-bottom: 1px solid #333; }
+        summary { 
+            background: #1a1a1a; color: #ccc; padding: 10px 15px; cursor: pointer; 
+            font-size: 0.8em; font-weight: bold; text-transform: uppercase; list-style: none; 
+            display: flex; justify-content: space-between; align-items: center;
+        }
+        summary::-webkit-details-marker { display: none; }
+        summary:after { content: "+"; color: #ff0055; font-weight: bold; font-size: 1.2em; }
+        details[open] summary { background: #222; color: #fff; }
+        details[open] summary:after { content: "-"; color: #00ffcc; }
+
+        .control-group { padding: 15px; background: #0d0d0d; }
+
         .control-row { display: flex; gap: 10px; margin-bottom: 12px; align-items: center; }
-        .control-row label { color: #00ffcc; font-size: 0.7em; width: 80px; flex-shrink: 0; text-transform: uppercase; letter-spacing: 1px; text-align:right; margin-right:5px;}
+        .control-row label { color: #00ffcc; font-size: 0.7em; width: 60px; flex-shrink: 0; text-transform: uppercase; letter-spacing: 1px; text-align:right; margin-right:5px;}
         input[type=range] { flex: 1; accent-color: #00ffcc; cursor: pointer; }
         
         .mini-group { display: flex; gap: 4px; flex: 1; flex-wrap: wrap; }
         .mini-btn { 
-            flex: 1; min-width: 30px;
+            flex: 1; min-width: 30px; 
             background: #1a1a1a; border: 1px solid #00ffcc; color: #00ffcc; 
-            padding: 6px 2px; font-size: 0.65em; cursor: pointer; 
+            padding: 8px 2px; font-size: 0.65em; cursor: pointer; 
             border-radius: 4px; font-weight: bold; text-align: center;
         }
         .mini-btn.active { background: #ff0055; color: white; border-color: #ff0055; }
         .mini-btn.disabled { border-color: #444; color: #555; cursor: not-allowed; opacity: 0.6; }
 
-        /* ADVANCED ACCORDION */
-        details { width: 100%; margin-top: 10px; border-top: 1px solid #333; padding-top: 10px; }
-        summary { color: #555; font-size: 0.8em; cursor: pointer; text-transform: uppercase; list-style: none; margin-bottom: 10px;}
-        summary::-webkit-details-marker { display: none; }
-        summary:after { content: "+ ADVANCED"; }
-        details[open] summary:after { content: "- ADVANCED"; color: #00ffcc; }
+        .coord-val { font-size: 0.8em; color: #fff; font-weight: bold; font-family: monospace; width: 30px; text-align: center; }
         
-        /* DISABLED GROUP STYLE */
-        .advanced-group { opacity: 0.3; pointer-events: none; filter: grayscale(100%); }
+        /* MIXING DESK STYLES */
+        .jitter-desk { display: flex; flex-direction: column; gap: 10px; }
+        .jitter-col { display: flex; align-items: center; gap: 10px; }
+        .jitter-col label { width: 50px; color: #00ffcc; font-size: 0.7em; font-weight: bold; }
+        .jitter-slider { flex: 1; }
+
+        .advanced-accordion { display: block; }
+
+        /* MEMORY SPECIFIC UI */
+        #row_index, #row_span { display: none; opacity: 0.5; transition: 0.3s; }
+        #row_index.active, #row_span.active { display: flex; opacity: 1; }
+
+        /* RADICAL THEME OVERRIDES */
+        body.radical-mode .config-label,
+        body.radical-mode .control-row label,
+        body.radical-mode .jitter-col label { color: #ff0055 !important; }
+        body.radical-mode input[type=range] { accent-color: #ff0055 !important; }
+        body.radical-mode .mini-btn { border-color: #ff0055; color: #ff0055; }
+        body.radical-mode .mini-btn.active { background: #ff0055; color: #fff; }
+        body.radical-mode details[open] summary:after { color: #ff0055; }
+
+        /* MOBILE OVERRIDE */
+        @media (max-width: 600px) {
+            .jitter-desk {
+                flex-direction: row; 
+                justify-content: space-around;
+                height: 180px; 
+                background: #000;
+                border: 1px solid #222;
+                border-radius: 6px;
+                padding: 15px 5px;
+                margin-bottom: 10px;
+            }
+            .jitter-col {
+                flex-direction: column; 
+                height: 100%;
+                width: 30%;
+                gap: 5px;
+            }
+            .jitter-slider {
+                writing-mode: bt-lr; 
+                -webkit-appearance: slider-vertical; 
+                width: 40px;
+                height: 100%;
+                margin: 10px 0;
+            }
+            .desktop-label { display: none; }
+        }
 
         #overlay { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.92); z-index: 999; display: flex; flex-direction: column; align-items: center; justify-content: center; color:#ff0055; backdrop-filter: blur(5px); }
         .loader { border: 4px solid #333; border-top: 4px solid #ff0055; border-radius: 50%; width: 40px; height: 40px; animation: spin 1s linear infinite; margin-bottom: 15px; }
         @keyframes spin { 0% { transform: rotate(0deg); } 100% { transform: rotate(360deg); } }
         #overlay-text { font-family: monospace; font-size: 1.2em; color: #00ffcc; }
         
-        video { display: none; }
+        .dev-section { display: flex; flex-direction: column; gap: 10px; margin-top: 40px; border-top: 1px solid #333; padding-top: 20px; text-align: left; }
+        .arch-info { font-size: 0.8em; color: #666; margin-bottom: 10px; border-left: 2px solid #ff0055; padding-left: 10px;}
+        #debug-panel { background: #000; border: 1px solid #333; color: #0f0; font-family: 'Consolas', 'Monaco', monospace; font-size: 11px; padding: 10px; height: 100px; overflow-y: auto; border-radius: 4px; box-shadow: inset 0 0 10px #000; }
+        #debug_pre { white-space: pre-wrap; margin: 0; }
+
+        video, #hidden_canvas { position: fixed; top: -9999px; left: -9999px; opacity: 0; pointer-events: none; }
     </style>
 </head>
 <body>
@@ -110,7 +220,7 @@
     <div id="overlay"><div class="loader"></div><div id="overlay-text">BOOTING SYSTEM...</div></div>
 
     <div id="screen-ingest" class="container">
-        <h1>BAALSAMIC V13.1</h1>
+        <h1>BAALSAMIC V17.1</h1>
         
         <div class="config-panel">
             <span class="config-label">Sampling Rate (FPS)</span>
@@ -134,25 +244,22 @@
             <div class="file-help">Compatible: .mp4, .mov, .webm</div>
             <button class="btn-action" id="btn_stitch">GET STITCHES</button>
         </div>
-
+        
         <div class="dev-section">
-            <div class="arch-info">
-                <strong>Architecture Note:</strong><br>
-                This tool runs 100% Client-Side using <strong>Pyodide (WASM)</strong>. 
-                Your video is processed in your browser's RAM via a localized Python environment. 
-                No data is ever uploaded to a server.
-            </div>
-            <div id="debug-panel">
-                <h4>KERNEL LOG</h4>
-                <pre id="debug_pre">Initializing...</pre>
-            </div>
+            <div class="arch-info"><strong>V17.1 Architecture:</strong><br>Time Dilation Smear.<br>Memory Engine (Rhythm & Anchors).<br>Auto-Trim & Transparent Init.</div>
+            <div id="debug-panel"><h4>KERNEL LOG</h4><pre id="debug_pre">Initializing...</pre></div>
         </div>
     </div>
 
     <div id="screen-time-travel">
         <div class="tuner-header">
             <h2>TIME TRAVEL</h2>
-            <button class="btn-secondary" id="close_tuner">BACK</button>
+            <div class="header-buttons">
+                <button class="btn-radical" id="btn_radical" onclick="toggleRadicalMode()">!RAD</button>
+                <button class="btn-secondary" id="btn_reset">RESET</button>
+                <button class="btn-secondary" id="close_tuner">BACK</button>
+                <button class="btn-render-small" id="btn_render_final">RENDER</button>
+            </div>
         </div>
         
         <div class="lightbox-wrapper" id="lightbox_wrapper">
@@ -163,72 +270,122 @@
         </div>
 
         <div class="editor-controls">
-            <div class="control-row">
-                <label>CROP</label>
-                <div class="mini-group">
-                    <button class="mini-btn active" onclick="setRatio('max')">MAX</button>
-                    <button class="mini-btn" onclick="setRatio('1:1')">1:1</button>
-                    <button class="mini-btn" onclick="setRatio('4:5')">4:5</button>
-                    <button class="mini-btn" onclick="setRatio('4:3')">4:3</button>
-                    <button class="mini-btn" onclick="setRatio('3:2')">3:2</button>
-                    <button class="mini-btn" onclick="setRatio('16:9')">16:9</button>
-                    <button class="mini-btn disabled">CUST</button>
-                </div>
-            </div>
-
-            <div class="control-row" id="row_pos">
-                <label>POS</label>
-                <input type="range" id="input_pos" min="0" max="100" value="50" oninput="updateLensPositionFromSlider()">
-            </div>
-
-            <div class="control-row">
-                <label>WIDTH</label>
-                <input type="range" id="input_width" min="1" max="200" value="12" onchange="triggerUpdate()">
-            </div>
-            
-            <div class="control-row">
-                <label>X-JITTER</label>
-                <input type="range" id="input_xjitter" min="0" max="50" value="0" onchange="triggerUpdate()">
-            </div>
-
-            <div class="control-row">
-                <label>Y-JITTER</label>
-                <input type="range" id="input_yjitter" min="0" max="50" value="0" onchange="triggerUpdate()">
-            </div>
-
-            <div class="control-row">
-                <label>Z-JITTER</label>
-                <input type="range" id="input_zjitter" min="0" max="90" value="0" onchange="triggerUpdate()">
-            </div>
-
-            <button class="btn-action" id="btn_render_final" style="margin-top:10px; margin-bottom:5px;">RENDER VIEW</button>
-
-            <details>
-                <summary></summary> 
-                <div class="advanced-group">
-                    <div class="control-row">
-                        <label>SKEW</label>
-                        <input type="range" min="-45" max="45" value="0" disabled>
-                    </div>
-                    <div class="control-row">
-                        <label>PATTERN</label>
-                        <div class="mini-group">
-                            <button class="mini-btn active">NOISE</button>
-                            <button class="mini-btn">SINE</button>
-                            <button class="mini-btn">SAW</button>
+            <div class="controls-scroll">
+                
+                <details open>
+                    <summary>MEMORY</summary>
+                    <div class="control-group">
+                        <div class="control-row">
+                            <label>MODE</label>
+                            <div class="mini-group anchor-group">
+                                <button class="mini-btn active" onclick="setAnchor('fit', this)">FIT</button>
+                                <button class="mini-btn" onclick="setAnchor('focus', this)">FOCUS</button>
+                            </div>
+                        </div>
+                        <div class="control-row" id="row_index">
+                            <label>INDEX</label>
+                            <input type="range" id="input_index" min="0" max="100" value="50" onchange="triggerUpdate()">
+                        </div>
+                        <div class="control-row" id="row_span">
+                            <label>SPAN</label>
+                            <input type="range" id="input_span" min="1" max="10" value="2" onchange="triggerUpdate()">
+                        </div>
+                        <div class="control-row">
+                            <label>BURST</label>
+                            <div class="mini-group burst-group">
+                                <button class="mini-btn" onclick="setBurst('soft', this)">SOFT</button>
+                                <button class="mini-btn active" onclick="setBurst('med', this)">MED</button>
+                                <button class="mini-btn" onclick="setBurst('hard', this)">HARD</button>
+                                <button class="mini-btn" onclick="setBurst('mix', this)">MIX</button>
+                            </div>
+                        </div>
+                        <div class="control-row">
+                            <label>GAP</label>
+                            <div class="mini-group gap-group">
+                                <button class="mini-btn active" onclick="setGap('close', this)">CLOSE</button>
+                                <button class="mini-btn" onclick="setGap('med', this)">MED</button>
+                                <button class="mini-btn" onclick="setGap('far', this)">FAR</button>
+                                <button class="mini-btn" onclick="setGap('mix', this)">MIX</button>
+                            </div>
                         </div>
                     </div>
-                    <div class="control-row">
-                        <label>SYMMETRY</label>
-                        <div class="mini-group">
-                            <button class="mini-btn active">OFF</button>
-                            <button class="mini-btn">1/3</button>
-                            <button class="mini-btn">1/2</button>
-                            <button class="mini-btn">2/3</button>
+                </details>
+
+                <details>
+                    <summary>GEOMETRY</summary>
+                    <div class="control-group">
+                        <div class="control-row">
+                            <label>CROP</label>
+                            <div class="mini-group ratio-mini-group">
+                                <button class="mini-btn active" onclick="setRatio('max')">MAX</button>
+                                <button class="mini-btn" onclick="setRatio('1:1')">1:1</button>
+                                <button class="mini-btn" onclick="setRatio('4:5')">4:5</button>
+                                <button class="mini-btn" onclick="setRatio('16:9')">16:9</button>
+                            </div>
+                        </div>
+                        <div class="control-row" id="row_pos">
+                            <label>POS</label>
+                            <input type="range" id="input_pos" min="0" max="100" value="50" oninput="updateLensPositionFromSlider()">
+                        </div>
+                        
+                        <div class="control-row">
+                            <label>STITCHES</label>
+                            <input type="range" id="input_count" min="10" max="60" value="50" oninput="updateCoords()" onchange="triggerUpdate()">
+                            <span id="val_cnt" class="coord-val">50</span>
+                        </div>
+                        <div class="control-row">
+                            <label>WIDTH</label>
+                            <input type="range" id="input_width" min="1" max="100" value="20" oninput="updateCoords()" onchange="triggerUpdate()">
+                            <span id="val_wid" class="coord-val">20</span>
                         </div>
                     </div>
-                </div>
-            </details>
+                </details>
+
+                <details>
+                    <summary>JITTERS</summary>
+                    <div class="control-group">
+                        <div class="jitter-desk">
+                            <div class="jitter-col">
+                                <label>X</label>
+                                <input type="range" id="input_xjitter" class="jitter-slider" min="0" max="100" value="0" oninput="updateCoords()" onchange="triggerUpdate()">
+                                <span id="val_x" class="coord-val">0</span>
+                            </div>
+                            <div class="jitter-col">
+                                <label>Y</label>
+                                <input type="range" id="input_yjitter" class="jitter-slider" min="0" max="100" value="0" oninput="updateCoords()" onchange="triggerUpdate()">
+                                <span id="val_y" class="coord-val">0</span>
+                            </div>
+                            <div class="jitter-col">
+                                <label>Z</label>
+                                <input type="range" id="input_zjitter" class="jitter-slider" min="0" max="8" value="0" oninput="updateCoords()" onchange="triggerUpdate()">
+                                <span id="val_z" class="coord-val">0</span>
+                            </div>
+                        </div>
+                    </div>
+                </details>
+
+                <details class="advanced-accordion">
+                    <summary>ADVANCED</summary>
+                    <div class="control-group">
+                        <div class="control-row">
+                            <label>DEPTH</label>
+                            <div class="mini-group depth-group">
+                                <button class="mini-btn active" onclick="setDepth('ltr', this)">L>R</button>
+                                <button class="mini-btn" onclick="setDepth('rtl', this)">R>L</button>
+                                <button class="mini-btn" onclick="setDepth('mix', this)">MIX</button>
+                            </div>
+                        </div>
+                        <div class="control-row">
+                            <label>SMEAR</label>
+                            <div class="mini-group smear-group">
+                                <button class="mini-btn active" onclick="setSmear(1, this)">1x</button>
+                                <button class="mini-btn" onclick="setSmear(2, this)">2x</button>
+                                <button class="mini-btn" onclick="setSmear(3, this)">3x</button>
+                            </div>
+                        </div>
+                    </div>
+                </details>
+            </div>
         </div>
     </div>
 
@@ -236,81 +393,163 @@
     <canvas id="hidden_canvas"></canvas>
 
     <script>
-    // HELPER: Show filename on select
+    // GLOBAL STORE
+    window.sourceFilename = "baalsamic_render";
+    window.currentRatio = 'max';
+    window.currentSmear = 1;
+    window.currentDepth = 'ltr';
+    window.currentAnchor = 'fit';
+    window.currentBurst = 'med';
+    window.currentGap = 'close';
+    window.isRadical = false;
+
+    // RANGES
+    const RANGES = {
+        organic: { count: 60, z: 8 },
+        radical: { count: 500, z: 90 }
+    };
+
     function updateFileLabel() {
         const input = document.getElementById('upload');
         const label = document.getElementById('file-label');
         if (input.files.length > 0) {
-            label.innerText = "FILE SELECTED: " + input.files[0].name.substring(0, 20) + "...";
-            label.style.background = "#00ffcc";
-            label.style.color = "black";
+            window.sourceFilename = input.files[0].name.replace(/\.[^/.]+$/, "");
+            label.innerText = "READY: " + input.files[0].name.substring(0, 15) + "...";
+            label.style.background = "#00ffcc"; label.style.color = "black";
         }
     }
 
-    // DEBUG & LOGGING
-    function dbg(msg){
-        console.log(msg);
-        const pre = document.getElementById("debug_pre");
-        if(pre) {
-            pre.textContent = (pre.textContent + "\n> " + msg).slice(-5000);
-            const panel = document.getElementById("debug-panel");
-            if(panel) panel.scrollTop = panel.scrollHeight;
+    function toggleRadicalMode() {
+        window.isRadical = !window.isRadical; 
+        const btn = document.getElementById('btn_radical');
+        const limits = window.isRadical ? RANGES.radical : RANGES.organic;
+        
+        const countInput = document.getElementById('input_count');
+        const zInput = document.getElementById('input_zjitter');
+        
+        countInput.max = limits.count;
+        zInput.max = limits.z;
+        
+        if (window.isRadical) {
+            btn.classList.add('active');
+            document.body.classList.add('radical-mode');
+        } else {
+            btn.classList.remove('active');
+            document.body.classList.remove('radical-mode');
+            if (parseInt(countInput.value) > limits.count) countInput.value = limits.count;
+            if (parseInt(zInput.value) > limits.z) zInput.value = limits.z;
         }
-        const ov = document.getElementById("overlay");
-        if(ov && ov.style.display !== "none") {
-            document.getElementById("overlay-text").innerText = msg.toUpperCase();
-        }
+        
+        updateCoords();
+        triggerUpdate();
     }
 
-    // --- STANDARD JS LOGIC ---
-    window.currentRatio = 'max';
-    window.currentPattern = 'NOISE';
-    window.currentSymmetry = 'OFF';
+    function updateCoords() {
+        document.getElementById('val_cnt').innerText = document.getElementById('input_count').value;
+        document.getElementById('val_wid').innerText = document.getElementById('input_width').value;
+        document.getElementById('val_x').innerText = document.getElementById('input_xjitter').value;
+        document.getElementById('val_y').innerText = document.getElementById('input_yjitter').value;
+        document.getElementById('val_z').innerText = document.getElementById('input_zjitter').value;
+    }
+    
+    function calculateGoldenStart() {
+        const screenW = window.innerWidth;
+        const targetW = Math.floor(screenW * 0.8);
+        const stitchW = 20; 
+        let count = Math.floor(targetW / stitchW);
+        
+        if (count < 10) count = 10;
+        if (count > RANGES.organic.count) count = RANGES.organic.count; 
+
+        document.getElementById('input_count').value = count;
+        document.getElementById('input_width').value = stitchW;
+        document.getElementById('input_xjitter').value = 0;
+        document.getElementById('input_yjitter').value = 0;
+        document.getElementById('input_zjitter').value = 0;
+        
+        setSmear(1, document.querySelector('.smear-group .mini-btn')); 
+        setDepth('ltr', document.querySelector('.depth-group .mini-btn'));
+        setAnchor('fit', document.querySelector('.anchor-group .mini-btn'));
+        setBurst('med', document.querySelector('.burst-group .mini-btn'));
+        setGap('close', document.querySelector('.gap-group .mini-btn'));
+        
+        updateCoords();
+    }
 
     function setRatio(r) {
         window.currentRatio = r;
-        const buttons = document.querySelectorAll('.mini-btn');
-        buttons.forEach(b => {
-            if(b.innerText.toLowerCase() === r.toLowerCase() || 
-               (r === 'max' && b.innerText === 'MAX')) {
-               if(b.parentElement.classList.contains('ratio-mini-group')) {
-                   b.parentElement.querySelectorAll('.mini-btn').forEach(sib => sib.classList.remove('active'));
-                   b.classList.add('active');
-               }
-            }
+        const group = document.querySelector('.ratio-mini-group');
+        group.querySelectorAll('.mini-btn').forEach(b => {
+            if(b.innerText.toLowerCase() === r.toLowerCase() || (r === 'max' && b.innerText === 'MAX')) b.classList.add('active');
+            else b.classList.remove('active');
         });
-        
         const posRow = document.getElementById('row_pos');
-        if (r === 'max') {
-            posRow.style.opacity = '0.3';
-            posRow.style.pointerEvents = 'none';
-        } else {
-            posRow.style.opacity = '1';
-            posRow.style.pointerEvents = 'auto';
-        }
+        if (r === 'max') { posRow.style.opacity = '0.3'; posRow.style.pointerEvents = 'none'; } 
+        else { posRow.style.opacity = '1'; posRow.style.pointerEvents = 'auto'; }
         updateLensDimensions();
+    }
+
+    function setSmear(val, btn) {
+        window.currentSmear = val;
+        document.querySelector('.smear-group').querySelectorAll('.mini-btn').forEach(b => b.classList.remove('active'));
+        if(btn) btn.classList.add('active');
+        triggerUpdate();
+    }
+
+    function setDepth(val, btn) {
+        window.currentDepth = val;
+        document.querySelector('.depth-group').querySelectorAll('.mini-btn').forEach(b => b.classList.remove('active'));
+        if(btn) btn.classList.add('active');
+        triggerUpdate();
+    }
+
+    function setAnchor(val, btn) {
+        window.currentAnchor = val;
+        document.querySelector('.anchor-group').querySelectorAll('.mini-btn').forEach(b => b.classList.remove('active'));
+        if(btn) btn.classList.add('active');
+        
+        const rowIndex = document.getElementById('row_index');
+        const rowSpan = document.getElementById('row_span');
+        
+        if (val === 'focus') {
+            rowIndex.classList.add('active');
+            rowSpan.classList.add('active');
+        } else {
+            rowIndex.classList.remove('active');
+            rowSpan.classList.remove('active');
+        }
+        triggerUpdate();
+    }
+
+    function setBurst(val, btn) {
+        window.currentBurst = val;
+        document.querySelector('.burst-group').querySelectorAll('.mini-btn').forEach(b => b.classList.remove('active'));
+        if(btn) btn.classList.add('active');
+        triggerUpdate();
+    }
+
+    function setGap(val, btn) {
+        window.currentGap = val;
+        document.querySelector('.gap-group').querySelectorAll('.mini-btn').forEach(b => b.classList.remove('active'));
+        if(btn) btn.classList.add('active');
+        triggerUpdate();
     }
 
     function updateLensDimensions() {
         const canvas = document.getElementById('main_canvas');
         const lens = document.getElementById('crop-lens');
-        
-        if (window.currentRatio === 'max') {
-            lens.style.display = 'none';
-            return;
-        }
+        if (window.currentRatio === 'max') { lens.style.display = 'none'; return; }
         lens.style.display = 'block';
 
         const visH = canvas.clientHeight;
         const visW = canvas.clientWidth;
-        
         let targetW = visW;
-        
         if (window.currentRatio === '1:1') targetW = visH; 
         if (window.currentRatio === '4:5') targetW = visH * (4/5);
-        if (window.currentRatio === '4:3') targetW = visH * (4/3);
-        if (window.currentRatio === '3:2') targetW = visH * (3/2);
         if (window.currentRatio === '16:9') targetW = visH * (16/9); 
+        if (window.currentRatio === '9:16') targetW = visH * (9/16);
+
+        if(targetW > visW) targetW = visW;
 
         lens.style.width = targetW + "px";
         lens.style.height = visH + "px";
@@ -318,7 +557,12 @@
         
         const range = visW - targetW; 
         const left = range / 2;
-        lens.style.left = left + "px";
+        
+        const stage = document.getElementById('stage_container');
+        const stageW = stage.clientWidth;
+        const canvasOffset = (stageW - visW) / 2;
+        
+        lens.style.left = (canvasOffset + left) + "px";
         document.getElementById('input_pos').value = 50;
     }
 
@@ -326,60 +570,70 @@
         if (window.currentRatio === 'max') return;
         const lens = document.getElementById('crop-lens');
         const slider = document.getElementById('input_pos');
-        const wrapper = document.getElementById('lightbox_wrapper');
-        const wrapperW = wrapper.clientWidth;
-        const lensW = parseFloat(lens.style.width);
-        const range = wrapperW; 
-        const offset = ((slider.value - 50) / 100) * range;
-        const stageW = document.getElementById('stage_container').clientWidth;
-        const center = stageW / 2;
-        const newLeft = center + offset - (lensW / 2);
-        lens.style.left = newLeft + "px";
+        const canvas = document.getElementById('main_canvas');
+        const stage = document.getElementById('stage_container');
+        
+        const visW = canvas.clientWidth;
+        const stageW = stage.clientWidth;
+        const canvasOffset = (stageW - visW) / 2;
+        
+        const maxLensTravel = visW - parseFloat(lens.style.width);
+        const relativeLeft = (slider.value / 100) * maxLensTravel;
+        
+        lens.style.left = (canvasOffset + relativeLeft) + "px";
     }
-
+    
     const lens = document.getElementById('crop-lens');
     let isDragging = false;
-    let startX = 0;
-    let startLeft = 0;
+    let startX = 0; let startLeft = 0;
 
-    function startDrag(e) {
-        if(window.currentRatio === 'max') return;
-        isDragging = true;
-        startX = (e.touches ? e.touches[0].clientX : e.clientX);
-        startLeft = parseFloat(lens.style.left) || 0;
-        lens.style.cursor = 'grabbing';
+    function startDrag(e) { 
+        if(window.currentRatio === 'max') return; 
+        isDragging = true; 
+        startX = (e.touches ? e.touches[0].clientX : e.clientX); 
+        startLeft = parseFloat(lens.style.left) || 0; 
+        lens.style.cursor = 'grabbing'; 
     }
 
-    function doDrag(e) {
-        if(!isDragging) return;
-        e.preventDefault();
-        const clientX = (e.touches ? e.touches[0].clientX : e.clientX);
-        const delta = clientX - startX;
-        lens.style.left = (startLeft + delta) + "px";
+    function doDrag(e) { 
+        if(!isDragging) return; 
+        e.preventDefault(); 
+        const clientX = (e.touches ? e.touches[0].clientX : e.clientX); 
+        const delta = clientX - startX; 
+        
+        const canvas = document.getElementById('main_canvas');
+        const stage = document.getElementById('stage_container');
+        const visW = canvas.clientWidth;
+        const stageW = stage.clientWidth;
+        const canvasOffset = (stageW - visW) / 2;
+        
+        const minX = canvasOffset;
+        const maxX = minX + (visW - parseFloat(lens.style.width));
+        
+        let newLeft = startLeft + delta;
+        if(newLeft < minX) newLeft = minX;
+        if(newLeft > maxX) newLeft = maxX;
+        
+        lens.style.left = newLeft + "px"; 
+        
+        const range = maxX - minX;
+        if(range > 0) {
+            const pct = ((newLeft - minX) / range) * 100;
+            document.getElementById('input_pos').value = pct;
+        }
     }
 
-    function stopDrag() {
-        isDragging = false;
-        lens.style.cursor = 'grab';
-    }
+    function stopDrag() { isDragging = false; lens.style.cursor = 'grab'; }
+    
+    lens.addEventListener('mousedown', startDrag); lens.addEventListener('touchstart', startDrag);
+    window.addEventListener('mousemove', doDrag); window.addEventListener('touchmove', doDrag, {passive: false});
+    window.addEventListener('mouseup', stopDrag); window.addEventListener('touchend', stopDrag);
 
-    lens.addEventListener('mousedown', startDrag);
-    lens.addEventListener('touchstart', startDrag);
-    window.addEventListener('mousemove', doDrag);
-    window.addEventListener('touchmove', doDrag, {passive: false});
-    window.addEventListener('mouseup', stopDrag);
-    window.addEventListener('touchend', stopDrag);
-
-    function triggerUpdate() {
-        window.call_py("await update_preview()");
-    }
-
-    window.addEventListener('resize', () => {
-        setTimeout(updateLensDimensions, 100);
-    });
+    function triggerUpdate() { window.call_py("await update_preview()"); }
+    window.addEventListener('resize', () => { setTimeout(updateLensDimensions, 100); });
+    function dbg(msg){ console.log(msg); const pre = document.getElementById("debug_pre"); if(pre) { pre.textContent = (pre.textContent + "\n> " + msg).slice(-5000); const panel = document.getElementById("debug-panel"); if(panel) panel.scrollTop = panel.scrollHeight; } const ov = document.getElementById("overlay"); if(ov && ov.style.display !== "none") { document.getElementById("overlay-text").innerText = msg.toUpperCase(); } }
 
     const PYODIDE_BASE = "https://cdn.jsdelivr.net/pyodide/v0.23.2/full/";
-    
     (function(){
         dbg("Downloading Pyodide Engine...");
         const s = document.createElement("script");
@@ -388,7 +642,6 @@
             dbg("Initializing WASM...");
             try {
                 window.pyodide = await loadPyodide({indexURL: PYODIDE_BASE});
-                dbg("Loading Python Kernel...");
                 window.call_py = async function(expr){ return await pyodide.runPythonAsync(expr); };
                 await initializePython();
             } catch(e){ dbg("INIT ERROR: " + e); }
@@ -403,7 +656,6 @@
         document.getElementById("btn_stitch").onclick = async () => {
             dbg("Stitch Request Sent");
             document.getElementById("overlay").style.display = "flex";
-            const container = document.getElementById("stage_container");
             await pyodide.runPythonAsync(`await ingest_video()`);
         };
         
@@ -412,50 +664,55 @@
             document.getElementById("screen-ingest").style.display = "flex";
             dbg("Navigated Back");
         };
+
+        document.getElementById("btn_reset").onclick = async () => {
+            window.calculateGoldenStart();
+            window.triggerUpdate();
+            dbg("System Reset to Golden State");
+        };
         
         document.getElementById("btn_render_final").onclick = async () => {
             document.getElementById("overlay").style.display = "flex";
-            dbg("Rendering Final...");
             
             const canvas = document.getElementById("main_canvas");
             const lens = document.getElementById("crop-lens");
-            
             const scale = canvas.width / canvas.clientWidth; 
-            let sx = 0, sw = canvas.width;
+            
+            let sourceX = 0;
+            let sourceW = canvas.width;
+            let sourceH = canvas.height;
             
             if (window.currentRatio !== 'max') {
+                const stage = document.getElementById('stage_container');
+                const visW = canvas.clientWidth;
+                const stageW = stage.clientWidth;
+                const canvasOffset = (stageW - visW) / 2; 
                 const lensLeft = parseFloat(lens.style.left || 0);
                 const lensWidth = parseFloat(lens.style.width || 0);
-                sx = lensLeft * scale;
-                sw = lensWidth * scale;
+                const relativeLensX = lensLeft - canvasOffset;
+                
+                sourceX = relativeLensX * scale;
+                sourceW = lensWidth * scale;
             }
             
             const temp = document.createElement('canvas');
-            temp.width = sw;
-            temp.height = canvas.height;
+            temp.width = sourceW; temp.height = sourceH;
             const ctx = temp.getContext('2d');
             
-            ctx.fillStyle = "black";
+            ctx.fillStyle = "black"; 
             ctx.fillRect(0, 0, temp.width, temp.height);
-            ctx.drawImage(canvas, -sx, 0); 
+            ctx.drawImage(canvas, sourceX, 0, sourceW, sourceH, 0, 0, sourceW, sourceH);
             
-            // FILENAME GENERATION
-            const fileInput = document.getElementById('upload');
-            let baseName = "baalsamic_render";
-            if (fileInput.files.length > 0) {
-                let name = fileInput.files[0].name;
-                const lastDot = name.lastIndexOf('.');
-                if (lastDot !== -1) name = name.substring(0, lastDot);
-                baseName = name.substring(0, 30); // Truncate 30
-            }
-
-            const w = document.getElementById("input_width").value;
-            const x = document.getElementById("input_xjitter").value;
-            const y = document.getElementById("input_yjitter").value;
-            const z = document.getElementById("input_zjitter").value;
-
-            const filename = `BAAL_${baseName}_w${w}_x${x}_y${y}_z${z}.png`;
+            const count = document.getElementById("input_count").value;
+            const width = document.getElementById("input_width").value;
+            const smear = window.currentSmear;
+            const depth = window.currentDepth;
+            const anchor = window.currentAnchor;
+            const burst = window.currentBurst;
+            const gap = window.currentGap;
             
+            const filename = `BAAL_${window.sourceFilename}_v17_${anchor}_b-${burst}_g-${gap}_c${count}_w${width}.png`;
+
             const link = document.createElement('a');
             link.download = filename;
             link.href = temp.toDataURL();
@@ -473,22 +730,16 @@
 from js import document, console, localStorage, JSON, window, setTimeout
 import asyncio, random, math
 
-# --- JITTER ENGINE ---
-jitter_seed_x = 0
-jitter_seed_y = 0
-
-def generate_jitter_values(flavor, length, intensity, seed):
-    random.seed(seed)
-    vals = [0] * length
-    if intensity == 0: return vals
-    if flavor == 'NOISE':
-        return [random.randint(-intensity, intensity) for _ in range(length)]
+def generate_jitter_bag(length, intensity):
+    if intensity == 0: return [0] * length
+    bag_size = 20
+    bag = []
+    for i in range(bag_size):
+        bag.append(random.randint(-intensity, intensity))
+    vals = []
+    for _ in range(length):
+        vals.append(random.choice(bag))
     return vals
-
-def apply_symmetry(data, sym_mode):
-    return data
-
-# --- MAIN LOGIC ---
 
 current_seed = 0
 
@@ -507,55 +758,57 @@ async def ingest_video(*args):
     while not video.duration or math.isnan(video.duration):
         await asyncio.sleep(0.1)
     
-    fps = int(document.querySelector('input[name="fps"]:checked').value)
-    duration = video.duration
-    total_frames = max(1, int(duration * fps))
-    
-    target_w = video.videoHeight * 0.75
-    auto_slit = int(target_w / total_frames)
-    auto_slit = max(1, min(200, auto_slit))
-    
-    document.getElementById("input_width").value = auto_slit
-    document.getElementById("input_xjitter").value = 0
-    document.getElementById("input_yjitter").value = 0
-    document.getElementById("input_zjitter").value = 0
+    video.currentTime = 0.5
+    await asyncio.sleep(0.1)
+    video.currentTime = 0.0
+
+    window.calculateGoldenStart()
     
     document.getElementById("screen-ingest").style.display = "none"
     document.getElementById("screen-time-travel").style.display = "flex"
     
-    global jitter_seed_x, jitter_seed_y, current_seed
+    global current_seed
     current_seed = random.randint(100, 999)
-    jitter_seed_x = random.randint(0, 100)
-    jitter_seed_y = random.randint(0, 100)
-    
     await update_preview()
     window.setRatio('max') 
     document.getElementById("overlay").style.display = "none"
 
 async def update_preview(*args):
+    # GEOMETRY
+    count = int(document.getElementById("input_count").value)
     width = int(document.getElementById("input_width").value)
-    x_jitter = int(document.getElementById("input_xjitter").value)
-    y_jitter = int(document.getElementById("input_yjitter").value)
-    z_jitter = int(document.getElementById("input_zjitter").value)
+    
+    # ENTROPY
+    x_jit = int(document.getElementById("input_xjitter").value)
+    y_jit = int(document.getElementById("input_yjitter").value)
+    z_jit = int(document.getElementById("input_zjitter").value)
+    
+    # MEMORY PARAMS
+    anchor_mode = window.currentAnchor
+    index_pct = int(document.getElementById("input_index").value) / 100.0
+    span_sec = int(document.getElementById("input_span").value)
+    burst_mode = window.currentBurst
+    gap_mode = window.currentGap
+    
     fps = int(document.querySelector('input[name="fps"]:checked').value)
     res = int(document.querySelector('input[name="res"]:checked').value)
-    
-    pattern = window.currentPattern
-    symmetry = window.currentSymmetry
+    smear = window.currentSmear
+    depth = window.currentDepth
     
     video = document.getElementById("hidden_video")
-    await run_process(video, width, x_jitter, y_jitter, z_jitter, res, "main_canvas", fps, pattern, symmetry)
+    
+    await run_process(video, count, width, smear, depth, anchor_mode, index_pct, span_sec, burst_mode, gap_mode, x_jit, y_jit, z_jit, res, "main_canvas", fps)
     
     window.updateLensDimensions()
 
-async def run_process(video_elem, width, x_jitter, y_jitter, z_jitter, target_height, canvas_id, target_fps, pattern, symmetry):
+async def run_process(video_elem, target_count, base_width, smear_val, depth_mode, anchor_mode, index_pct, span_sec, burst_mode, gap_mode, x_jitter, y_jitter, z_jitter, target_height, canvas_id, target_fps):
     canvas = document.getElementById("hidden_canvas")
     ctx = canvas.getContext("2d")
     out_canvas = document.getElementById(canvas_id)
     out_ctx = out_canvas.getContext("2d")
-    
     out_ctx.imageSmoothingEnabled = False
     
+    # CANVAS SETUP
     scale = 1.0
     if target_height > 0 and video_elem.videoHeight > target_height:
         scale = target_height / video_elem.videoHeight
@@ -563,94 +816,140 @@ async def run_process(video_elem, width, x_jitter, y_jitter, z_jitter, target_he
     w = int(video_elem.videoWidth * scale)
     h = int(video_elem.videoHeight * scale)
     canvas.width = w; canvas.height = h
-    
-    curr_slit_base = max(1, int(width * scale))
-    curr_x_int = int(x_jitter * scale)
-    curr_y_int = int(y_jitter * scale)
-    curr_z_median = z_jitter 
 
+    # TIME CALCULATIONS
     duration = video_elem.duration
-    step = 1 / target_fps
+    start_time = 0.0
+    end_time = duration
     
-    total_frames = max(1, int(duration * target_fps))
+    if anchor_mode == 'focus':
+        center = duration * index_pct
+        half_span = span_sec / 2.0
+        start_time = max(0.0, center - half_span)
+        end_time = min(duration, center + half_span)
     
-    est_width = total_frames * (curr_slit_base + curr_x_int)
+    available_time = end_time - start_time
+    # Default step if NO rhythm is applied
+    base_step = available_time / max(1, target_count)
+    
+    # RHYTHM LOGIC SETUP
+    # Burst map (frames to take sequentially): Soft=1, Med=3, Hard=10
+    burst_limit = 1
+    if burst_mode == 'med': burst_limit = 3
+    if burst_mode == 'hard': burst_limit = 10
+    if burst_mode == 'mix': burst_limit = random.randint(1, 5)
+    
+    # Gap map (time to skip in sec): Close=0, Med=0.5, Far=2.0
+    gap_sec = 0.0
+    if gap_mode == 'med': gap_sec = 0.5
+    if gap_mode == 'far': gap_sec = 2.0
+    if gap_mode == 'mix': gap_sec = random.uniform(0.1, 1.0)
+    
+    # PREPARE CANVAS
+    est_width = target_count * base_width * smear_val + (target_count * int(x_jitter * scale))
     out_canvas.width = est_width
     out_canvas.height = h
+    out_ctx.clearRect(0, 0, est_width, h)
     
-    x_vals = generate_jitter_values(pattern, total_frames + 20, curr_x_int, jitter_seed_x)
-    y_vals = generate_jitter_values(pattern, total_frames + 20, curr_y_int, jitter_seed_y)
+    # JITTERS
+    curr_x_int = int(x_jitter * scale)
+    curr_y_int = int(y_jitter * scale)
+    x_vals = generate_jitter_bag(target_count + 10, curr_x_int)
+    y_vals = generate_jitter_bag(target_count + 10, curr_y_int)
     
-    x_vals = apply_symmetry(x_vals, symmetry)
-    y_vals = apply_symmetry(y_vals, symmetry)
-    
-    current_time = 0.0
+    # THE LOOP
+    current_time = start_time
     x_pos = 0
-    frame_idx = 0
+    idx = 0
+    burst_counter = 0
     
-    out_ctx.fillStyle = "black"
-    out_ctx.fillRect(0, 0, est_width, h)
-    
-    while current_time < duration:
+    # We iterate by STITCH COUNT (geometry driven), but time advances rhythmically
+    for i in range(target_count):
+        if current_time >= end_time: break
+        
         video_elem.currentTime = current_time
-        await asyncio.sleep(0.02)
+        if i == 0: await asyncio.sleep(0.15)
+        else: await asyncio.sleep(0.04)
+        
         try: ctx.drawImage(video_elem, 0, 0, w, h)
         except: break
         
-        y_off = 0
-        x_var = 0
-        if frame_idx < len(y_vals):
-            y_off = y_vals[frame_idx]
-            x_var = x_vals[frame_idx]
+        # DRAW LOGIC (Same as V16)
+        y_off = 0; x_var = 0
+        if i < len(y_vals):
+            y_off = y_vals[i]; x_var = x_vals[i]
             
         center_x = (w // 2) + y_off
+        this_slit = (base_width * smear_val) + x_var
+        this_slit = max(1, this_slit)
+        start_x = max(0, min(w - this_slit, center_x))
         
-        this_slit_base = curr_slit_base + x_var
-        this_slit_base = max(1, this_slit_base)
-        
-        start_x = max(0, min(w - this_slit_base, center_x))
-        
+        mode = "source-over"
+        if depth_mode == "rtl": mode = "destination-over"
+        elif depth_mode == "mix":
+            if random.random() > 0.5: mode = "destination-over"
+        out_ctx.globalCompositeOperation = mode
+
         angle = 0
-        if curr_z_median > 0:
-            angle = random.uniform(-curr_z_median, curr_z_median)
-        
+        if z_jitter > 0: angle = random.uniform(-z_jitter, z_jitter)
+            
         if angle == 0:
-            try: out_ctx.drawImage(canvas, start_x, 0, this_slit_base, h, x_pos, 0, this_slit_base, h)
-            except: break
+            try: out_ctx.drawImage(canvas, start_x, 0, this_slit, h, x_pos, 0, this_slit, h)
+            except: pass
         else:
             rads = math.radians(angle)
             gap_w = abs(h * math.sin(rads))
             expansion = (gap_w * 1.5) + 4
-            expanded_w = this_slit_base + expansion
-            
+            expanded_w = this_slit + expansion
             src_start_x = center_x - (expanded_w / 2)
             if src_start_x < 0: src_start_x = 0
-            if src_start_x + expanded_w > w: src_start_x = w - expanded_w
-            
             fill_bias = random.uniform(-0.5, 0.5) 
             offset_dest_x = (gap_w * fill_bias)
 
             out_ctx.save()
-            draw_center_x = x_pos + (this_slit_base / 2)
+            draw_center_x = x_pos + (this_slit / 2)
             draw_center_y = h / 2
             out_ctx.translate(draw_center_x, draw_center_y)
             out_ctx.rotate(rads)
-            
             try: out_ctx.drawImage(canvas, src_start_x, 0, expanded_w, h, -expanded_w/2 + offset_dest_x, -h/2, expanded_w, h)
             except: pass
             out_ctx.restore()
         
-        current_time += step
-        x_pos += this_slit_base
-        frame_idx += 1
+        # ADVANCE CANVAS
+        x_pos += this_slit
         
-        if frame_idx % 200 == 0: await asyncio.sleep(0.001)
-    
-    final_w = x_pos
-    if final_w > 0:
-        temp = out_ctx.getImageData(0, 0, final_w, h)
-        out_canvas.width = final_w
-        out_ctx.putImageData(temp, 0, 0)
+        # ADVANCE TIME (RHYTHM ENGINE)
+        burst_counter += 1
+        
+        # If Rhythm is effectively off (Soft Burst + Close Gap), use standard linear step
+        if burst_mode == 'soft' and gap_mode == 'close':
+             current_time += (base_step * smear_val)
+        else:
+            # Rhythmic Stepping
+            if burst_counter < burst_limit:
+                # Inside a burst: advance 1 frame (approx 0.033s)
+                current_time += (0.033 * smear_val)
+            else:
+                # End of burst: add gap
+                current_time += gap_sec
+                burst_counter = 0
+                # Re-roll mix if needed
+                if burst_mode == 'mix': burst_limit = random.randint(1, 5)
+                if gap_mode == 'mix': gap_sec = random.uniform(0.1, 1.0)
+
+        if i % 50 == 0: await asyncio.sleep(0.001)
+
+    # TRIM & SEAL
+    final_width = int(x_pos)
+    if final_width > 0 and final_width < est_width:
+        pixel_data = out_ctx.getImageData(0, 0, final_width, h)
+        out_canvas.width = final_width
+        out_ctx.putImageData(pixel_data, 0, 0)
+        est_width = final_width 
+
+    out_ctx.globalCompositeOperation = "destination-over"
+    out_ctx.fillStyle = "black"
+    out_ctx.fillRect(0, 0, est_width, h)
 
     </script>
 </body>
