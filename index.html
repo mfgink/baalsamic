@@ -3,7 +3,7 @@
 <head>
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,user-scalable=no" />
-    <title>Baalsamic V17.1</title>
+    <title>Baalsamic V17.2</title>
 
     <style>
         /* --- BASE --- */
@@ -24,6 +24,9 @@
         .radio-tile { display: flex; align-items: center; justify-content: center; background: #222; border: 1px solid #444; padding: 12px; border-radius: 4px; transition: 0.2s; }
         .radio-option input:checked + .radio-tile { background: #ff0055; color: white; border-color: #ff0055; }
         
+        /* WARNING TEXT */
+        .warning-text { color: #ffaa00; font-size: 0.75em; margin-top: -10px; margin-bottom: 15px; display: none; }
+
         /* FILE UPLOAD */
         #upload { display: none; }
         .btn-file { 
@@ -53,15 +56,20 @@
             text-transform: uppercase;
         }
 
+        /* PIXEL COUNTER */
+        .pixel-display { font-size: 0.65em; color: #666; font-family: monospace; margin-right: 5px; text-align: right;}
+        .pixel-display.danger { color: #ff0055; font-weight: bold; }
+
         /* --- SCREEN: TIME TRAVEL --- */
         #screen-time-travel { display: none; flex-direction: column; height: 100vh; width: 100vw; background: #000; }
 
         .tuner-header { 
             height: 60px; flex-shrink: 0; 
             display: flex; justify-content: space-between; align-items: center; 
-            padding: 0 15px; background: #0d0d0d; border-bottom: 1px solid #333; z-index: 10; 
+            padding: 0 10px; background: #0d0d0d; border-bottom: 1px solid #333; z-index: 10; 
         }
-        .tuner-header h2 { margin: 0; color: #ff0055; font-size: 1.1em; letter-spacing: 1px; }
+        .tuner-header h2 { margin: 0; color: #ff0055; font-size: 1.0em; letter-spacing: 1px; display: none; } /* Hidden on mobile to save space */
+        @media (min-width: 600px) { .tuner-header h2 { display: block; } }
 
         /* LIGHTBOX FIX */
         .lightbox-wrapper { 
@@ -101,7 +109,7 @@
         }
         #crop-lens:active { cursor: grabbing; border-color: #fff; }
 
-        /* CONTROLS */
+        /* CONTROLS (DEBUG BORDER ADDED) */
         .editor-controls { 
             flex: 1;                
             max-height: 50dvh;      
@@ -109,6 +117,8 @@
             flex-shrink: 0; 
             background: #111; 
             border-top: 1px solid #333; 
+            /* DEBUG: Visualize Layout issues on P9P */
+            border-bottom: 2px solid red; 
             z-index: 20; 
             display: flex; 
             flex-direction: column; 
@@ -159,9 +169,7 @@
         .jitter-col label { width: 50px; color: #00ffcc; font-size: 0.7em; font-weight: bold; }
         .jitter-slider { flex: 1; }
 
-        .advanced-accordion { display: block; }
-
-        /* MEMORY SPECIFIC UI */
+        /* MEMORY UI */
         #row_index, #row_span { display: none; opacity: 0.5; transition: 0.3s; }
         #row_index.active, #row_span.active { display: flex; opacity: 1; }
 
@@ -220,7 +228,7 @@
     <div id="overlay"><div class="loader"></div><div id="overlay-text">BOOTING SYSTEM...</div></div>
 
     <div id="screen-ingest" class="container">
-        <h1>BAALSAMIC V17.1</h1>
+        <h1>BAALSAMIC V17.2</h1>
         
         <div class="config-panel">
             <span class="config-label">Sampling Rate (FPS)</span>
@@ -231,11 +239,12 @@
             </div>
 
             <span class="config-label">Resolution</span>
-            <div class="radio-group">
+            <div class="radio-group" onchange="checkResolution()">
                 <div class="radio-option"><input type="radio" name="res" value="720" checked><div class="radio-tile"><span>SD</span></div></div>
                 <div class="radio-option"><input type="radio" name="res" value="1080"><div class="radio-tile"><span>HD</span></div></div>
                 <div class="radio-option"><input type="radio" name="res" value="0"><div class="radio-tile"><span>4K</span></div></div>
             </div>
+            <div id="res-warning" class="warning-text">⚠ High resolutions may cause slowness or crashes with high stitch counts.</div>
         </div>
 
         <div class="upload-container">
@@ -246,7 +255,7 @@
         </div>
         
         <div class="dev-section">
-            <div class="arch-info"><strong>V17.1 Architecture:</strong><br>Time Dilation Smear.<br>Memory Engine (Rhythm & Anchors).<br>Auto-Trim & Transparent Init.</div>
+            <div class="arch-info"><strong>V17.2 Architecture:</strong><br>New Accordion Structure.<br>Pixel Counter + 4K Warning.<br>Debug Mode Active.</div>
             <div id="debug-panel"><h4>KERNEL LOG</h4><pre id="debug_pre">Initializing...</pre></div>
         </div>
     </div>
@@ -255,6 +264,7 @@
         <div class="tuner-header">
             <h2>TIME TRAVEL</h2>
             <div class="header-buttons">
+                <span id="pixel_count" class="pixel-display">0px</span>
                 <button class="btn-radical" id="btn_radical" onclick="toggleRadicalMode()">!RAD</button>
                 <button class="btn-secondary" id="btn_reset">RESET</button>
                 <button class="btn-secondary" id="close_tuner">BACK</button>
@@ -290,24 +300,6 @@
                             <label>SPAN</label>
                             <input type="range" id="input_span" min="1" max="10" value="2" onchange="triggerUpdate()">
                         </div>
-                        <div class="control-row">
-                            <label>BURST</label>
-                            <div class="mini-group burst-group">
-                                <button class="mini-btn" onclick="setBurst('soft', this)">SOFT</button>
-                                <button class="mini-btn active" onclick="setBurst('med', this)">MED</button>
-                                <button class="mini-btn" onclick="setBurst('hard', this)">HARD</button>
-                                <button class="mini-btn" onclick="setBurst('mix', this)">MIX</button>
-                            </div>
-                        </div>
-                        <div class="control-row">
-                            <label>GAP</label>
-                            <div class="mini-group gap-group">
-                                <button class="mini-btn active" onclick="setGap('close', this)">CLOSE</button>
-                                <button class="mini-btn" onclick="setGap('med', this)">MED</button>
-                                <button class="mini-btn" onclick="setGap('far', this)">FAR</button>
-                                <button class="mini-btn" onclick="setGap('mix', this)">MIX</button>
-                            </div>
-                        </div>
                     </div>
                 </details>
 
@@ -315,19 +307,13 @@
                     <summary>GEOMETRY</summary>
                     <div class="control-group">
                         <div class="control-row">
-                            <label>CROP</label>
-                            <div class="mini-group ratio-mini-group">
-                                <button class="mini-btn active" onclick="setRatio('max')">MAX</button>
-                                <button class="mini-btn" onclick="setRatio('1:1')">1:1</button>
-                                <button class="mini-btn" onclick="setRatio('4:5')">4:5</button>
-                                <button class="mini-btn" onclick="setRatio('16:9')">16:9</button>
+                            <label>DEPTH</label>
+                            <div class="mini-group depth-group">
+                                <button class="mini-btn active" onclick="setDepth('ltr', this)">L>R</button>
+                                <button class="mini-btn" onclick="setDepth('rtl', this)">R>L</button>
+                                <button class="mini-btn" onclick="setDepth('mix', this)">MIX</button>
                             </div>
                         </div>
-                        <div class="control-row" id="row_pos">
-                            <label>POS</label>
-                            <input type="range" id="input_pos" min="0" max="100" value="50" oninput="updateLensPositionFromSlider()">
-                        </div>
-                        
                         <div class="control-row">
                             <label>STITCHES</label>
                             <input type="range" id="input_count" min="10" max="60" value="50" oninput="updateCoords()" onchange="triggerUpdate()">
@@ -337,6 +323,38 @@
                             <label>WIDTH</label>
                             <input type="range" id="input_width" min="1" max="100" value="20" oninput="updateCoords()" onchange="triggerUpdate()">
                             <span id="val_wid" class="coord-val">20</span>
+                        </div>
+                    </div>
+                </details>
+
+                <details>
+                    <summary>RHYTHM</summary>
+                    <div class="control-group">
+                        <div class="control-row">
+                            <label>SMEAR</label>
+                            <div class="mini-group smear-group">
+                                <button class="mini-btn active" onclick="setSmear(1, this)">1x</button>
+                                <button class="mini-btn" onclick="setSmear(2, this)">2x</button>
+                                <button class="mini-btn" onclick="setSmear(3, this)">3x</button>
+                            </div>
+                        </div>
+                        <div class="control-row">
+                            <label>BURST</label>
+                            <div class="mini-group burst-group">
+                                <button class="mini-btn" onclick="setBurst('soft', this)">SOFT</button>
+                                <button class="mini-btn active" onclick="setBurst('med', this)">MID</button>
+                                <button class="mini-btn" onclick="setBurst('hard', this)">HARD</button>
+                                <button class="mini-btn" onclick="setBurst('mix', this)">MIX</button>
+                            </div>
+                        </div>
+                        <div class="control-row">
+                            <label>GAP</label>
+                            <div class="mini-group gap-group">
+                                <button class="mini-btn active" onclick="setGap('close', this)">CLOSE</button>
+                                <button class="mini-btn" onclick="setGap('med', this)">MID</button>
+                                <button class="mini-btn" onclick="setGap('far', this)">FAR</button>
+                                <button class="mini-btn" onclick="setGap('mix', this)">MIX</button>
+                            </div>
                         </div>
                     </div>
                 </details>
@@ -364,27 +382,25 @@
                     </div>
                 </details>
 
-                <details class="advanced-accordion">
-                    <summary>ADVANCED</summary>
+                <details>
+                    <summary>CROP</summary>
                     <div class="control-group">
                         <div class="control-row">
-                            <label>DEPTH</label>
-                            <div class="mini-group depth-group">
-                                <button class="mini-btn active" onclick="setDepth('ltr', this)">L>R</button>
-                                <button class="mini-btn" onclick="setDepth('rtl', this)">R>L</button>
-                                <button class="mini-btn" onclick="setDepth('mix', this)">MIX</button>
+                            <label>RATIO</label>
+                            <div class="mini-group ratio-mini-group">
+                                <button class="mini-btn active" onclick="setRatio('max')">MAX</button>
+                                <button class="mini-btn" onclick="setRatio('1:1')">1:1</button>
+                                <button class="mini-btn" onclick="setRatio('4:5')">4:5</button>
+                                <button class="mini-btn" onclick="setRatio('16:9')">16:9</button>
                             </div>
                         </div>
-                        <div class="control-row">
-                            <label>SMEAR</label>
-                            <div class="mini-group smear-group">
-                                <button class="mini-btn active" onclick="setSmear(1, this)">1x</button>
-                                <button class="mini-btn" onclick="setSmear(2, this)">2x</button>
-                                <button class="mini-btn" onclick="setSmear(3, this)">3x</button>
-                            </div>
+                        <div class="control-row" id="row_pos">
+                            <label>POS</label>
+                            <input type="range" id="input_pos" min="0" max="100" value="50" oninput="updateLensPositionFromSlider()">
                         </div>
                     </div>
                 </details>
+
             </div>
         </div>
     </div>
@@ -403,10 +419,9 @@
     window.currentGap = 'close';
     window.isRadical = false;
 
-    // RANGES
     const RANGES = {
-        organic: { count: 60, z: 8 },
-        radical: { count: 500, z: 90 }
+        organic: { count: 60, z: 8, w: 100 },
+        radical: { count: 500, z: 90, w: 200 } // Width bumped to 200
     };
 
     function updateFileLabel() {
@@ -419,15 +434,24 @@
         }
     }
 
+    function checkResolution() {
+        const val = document.querySelector('input[name="res"]:checked').value;
+        const warn = document.getElementById('res-warning');
+        if (val === "0") warn.style.display = "block";
+        else warn.style.display = "none";
+    }
+
     function toggleRadicalMode() {
         window.isRadical = !window.isRadical; 
         const btn = document.getElementById('btn_radical');
         const limits = window.isRadical ? RANGES.radical : RANGES.organic;
         
         const countInput = document.getElementById('input_count');
+        const widthInput = document.getElementById('input_width');
         const zInput = document.getElementById('input_zjitter');
         
         countInput.max = limits.count;
+        widthInput.max = limits.w; // Update width max
         zInput.max = limits.z;
         
         if (window.isRadical) {
@@ -437,6 +461,7 @@
             btn.classList.remove('active');
             document.body.classList.remove('radical-mode');
             if (parseInt(countInput.value) > limits.count) countInput.value = limits.count;
+            if (parseInt(widthInput.value) > limits.w) widthInput.value = limits.w;
             if (parseInt(zInput.value) > limits.z) zInput.value = limits.z;
         }
         
@@ -445,11 +470,21 @@
     }
 
     function updateCoords() {
-        document.getElementById('val_cnt').innerText = document.getElementById('input_count').value;
-        document.getElementById('val_wid').innerText = document.getElementById('input_width').value;
+        const c = document.getElementById('input_count').value;
+        const w = document.getElementById('input_width').value;
+        document.getElementById('val_cnt').innerText = c;
+        document.getElementById('val_wid').innerText = w;
         document.getElementById('val_x').innerText = document.getElementById('input_xjitter').value;
         document.getElementById('val_y').innerText = document.getElementById('input_yjitter').value;
         document.getElementById('val_z').innerText = document.getElementById('input_zjitter').value;
+
+        // PIXEL COUNTER LOGIC
+        const smear = window.currentSmear;
+        const totalW = (parseInt(c) * parseInt(w) * smear);
+        const display = document.getElementById('pixel_count');
+        display.innerText = totalW + "px";
+        if (totalW > 15000) display.classList.add('danger');
+        else display.classList.remove('danger');
     }
     
     function calculateGoldenStart() {
@@ -583,6 +618,7 @@
         lens.style.left = (canvasOffset + relativeLeft) + "px";
     }
     
+    // DRAG LOGIC
     const lens = document.getElementById('crop-lens');
     let isDragging = false;
     let startX = 0; let startLeft = 0;
@@ -711,7 +747,7 @@
             const burst = window.currentBurst;
             const gap = window.currentGap;
             
-            const filename = `BAAL_${window.sourceFilename}_v17_${anchor}_b-${burst}_g-${gap}_c${count}_w${width}.png`;
+            const filename = `BAAL_${window.sourceFilename}_v17.2_${anchor}_b-${burst}_g-${gap}_c${count}_w${width}.png`;
 
             const link = document.createElement('a');
             link.download = filename;
@@ -918,7 +954,7 @@ async def run_process(video_elem, target_count, base_width, smear_val, depth_mod
         # ADVANCE CANVAS
         x_pos += this_slit
         
-        # ADVANCE TIME (RHYTHM ENGINE)
+        # ADVANCE TIME (RHYTHM ENGINE - TIME DILATED)
         burst_counter += 1
         
         # If Rhythm is effectively off (Soft Burst + Close Gap), use standard linear step
