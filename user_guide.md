@@ -7,6 +7,8 @@ Baalsamic is a tool that breaks a video file into hundreds of tiny slices and re
 
 Instead of watching a video from start to finish, Baalsamic lays the video out flat, like unspooling a film reel and cutting it up to make a collage.
 
+[TRY IT HERE](https://mfg.wpengine.com/baalsamic.html)
+
 **1\. THE CORE CONCEPTS**
 -------------------------
 
