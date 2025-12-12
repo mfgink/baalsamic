@@ -5,6 +5,8 @@ Baalsamic: The Client-Side Kinetic Stitcher
 
 **Baalsamic** is a web-based kinetic photography engine that democratizes complex "slit-scan" and "time-displacement" glitch art.
 
+[TRY IT HERE](https://mfg.wpengine.com/baalsamic.html)
+
 Unlike traditional generative art tools that require expensive desktop software, command-line scripts, or server-side processing, Baalsamic runs **100% locally in your browser** using WebAssembly. It puts the power of Python-based video processing directly onto your mobile device, allowing for privacy-focused, zero-latency experimentation.
 
 Key Features
