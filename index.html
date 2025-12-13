@@ -3,7 +3,7 @@
 <head>
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,user-scalable=no" />
-    <title>Baalsamic V17.4</title>
+    <title>Baalsamic V17.6</title>
 
     <style>
         /* --- BASE --- */
@@ -109,27 +109,28 @@
         }
         #crop-lens:active { cursor: grabbing; border-color: #fff; }
 
-        /* CONTROLS */
+        /* CONTROLS (PIXEL 9 PRO FIXES) */
         .editor-controls { 
             flex: 1;                
-            max-height: 50dvh;      
+            max-height: 45dvh;  /* Reduced from 50dvh to avoid nav bar overlap */    
             min-height: 250px;      
             flex-shrink: 0; 
             background: #111; 
             border-top: 1px solid #333; 
-            border-bottom: 2px solid red; /* Debug border preserved for P9P check */
+            border-bottom: 2px solid red; /* Debug border preserved */
             z-index: 20; 
             display: flex; 
             flex-direction: column; 
             padding: 0;
             box-sizing: border-box;
+            padding-bottom: env(safe-area-inset-bottom); /* iOS/Android Safe Area */
         }
 
         .controls-scroll {
             flex-grow: 1;
             overflow-y: auto;
             padding: 15px 0;
-            padding-bottom: 40px; 
+            padding-bottom: 80px; /* Massive buffer for bottom controls */
         }
 
         /* ACCORDIONS */
@@ -227,7 +228,7 @@
     <div id="overlay"><div class="loader"></div><div id="overlay-text">BOOTING SYSTEM...</div></div>
 
     <div id="screen-ingest" class="container">
-        <h1>BAALSAMIC V17.4</h1>
+        <h1>BAALSAMIC V17.6</h1>
         
         <div class="config-panel">
             <span class="config-label">Sampling Rate (FPS)</span>
@@ -254,7 +255,7 @@
         </div>
         
         <div class="dev-section">
-            <div class="arch-info"><strong>V17.4 Architecture:</strong><br>Time Dilation + Sliding Window.<br>Numerical Time Labels (Index/Span).<br>Proportional Span Scaling.</div>
+            <div class="arch-info"><strong>V17.6 Architecture:</strong><br>Smart Seek (Mobile Fix).<br>Elastic Rhythm (Span = Master).<br>Pixel 9 Pro Layout Fixes.<br>Percentage Span Readout.</div>
             <div id="debug-panel"><h4>KERNEL LOG</h4><pre id="debug_pre">Initializing...</pre></div>
         </div>
     </div>
@@ -294,12 +295,12 @@
                         <div class="control-row" id="row_index">
                             <label>INDEX</label>
                             <input type="range" id="input_index" min="0" max="100" value="50" oninput="updateTimeLabels()" onchange="triggerUpdate()">
-                            <span id="val_idx_time" class="coord-val" style="width:40px;">0.0s</span>
+                            <span id="val_idx_time" class="coord-val" style="width:50px;">0.0s</span>
                         </div>
                         <div class="control-row" id="row_span">
                             <label>SPAN</label>
                             <input type="range" id="input_span" min="0" max="100" value="20" oninput="updateTimeLabels()" onchange="triggerUpdate()">
-                            <span id="val_span_time" class="coord-val" style="width:40px;">5.0s</span>
+                            <span id="val_span_time" class="coord-val" style="width:80px;">20% (1.5s)</span>
                         </div>
                     </div>
                 </details>
@@ -499,10 +500,10 @@
         const timeVal = (idxVal / 100) * dur;
         document.getElementById('val_idx_time').innerText = timeVal.toFixed(1) + "s";
         
-        // Update Span Timestamp (Map 0-100 to 1s-Duration)
+        // Update Span Percentage & Time
         const spanVal = document.getElementById('input_span').value;
         const spanSec = 1.0 + (spanVal / 100.0) * (dur - 1.0);
-        document.getElementById('val_span_time').innerText = spanSec.toFixed(1) + "s";
+        document.getElementById('val_span_time').innerText = spanVal + "% (" + spanSec.toFixed(1) + "s)";
     }
     
     function calculateGoldenStart() {
@@ -765,7 +766,7 @@
             const burst = window.currentBurst;
             const gap = window.currentGap;
             
-            const filename = `BAAL_${window.sourceFilename}_v17.4_${anchor}_b-${burst}_g-${gap}_c${count}_w${width}.png`;
+            const filename = `BAAL_${window.sourceFilename}_v17.6_${anchor}_b-${burst}_g-${gap}_c${count}_w${width}.png`;
 
             const link = document.createElement('a');
             link.download = filename;
@@ -784,6 +785,20 @@
 from js import document, console, localStorage, JSON, window, setTimeout
 import asyncio, random, math
 
+# --- NEW SEEK UTILITY FOR MOBILE FIX ---
+async def await_seek(video_elem, target_time):
+    video_elem.currentTime = target_time
+    
+    # 1. Standard sleep to let the request register
+    await asyncio.sleep(0.04) 
+    
+    # 2. Smart Lock: Wait for the browser to report "I am ready"
+    # We timeout after 1.0s to prevent infinite loops on broken files
+    timeout = 20 # 20 * 50ms = 1.0s
+    while video_elem.seeking and timeout > 0:
+        await asyncio.sleep(0.05)
+        timeout -= 1
+
 def generate_jitter_bag(length, intensity):
     if intensity == 0: return [0] * length
     bag_size = 20
@@ -794,6 +809,16 @@ def generate_jitter_bag(length, intensity):
     for _ in range(length):
         vals.append(random.choice(bag))
     return vals
+    
+def generate_burst_map(length, mode):
+    bag = []
+    for i in range(length):
+        if mode == 'soft': bag.append(1)
+        elif mode == 'med': bag.append(3)
+        elif mode == 'hard': bag.append(10)
+        elif mode == 'mix': bag.append(random.randint(1, 5))
+        else: bag.append(1)
+    return bag
 
 current_seed = 0
 
@@ -841,11 +866,10 @@ async def update_preview(*args):
     anchor_mode = window.currentAnchor
     index_pct = int(document.getElementById("input_index").value) / 100.0
     
-    # Span is now a percentage mapped to duration inside Python to match UI
+    # Span (Percentage to Seconds)
     video = document.getElementById("hidden_video")
     duration = video.duration
     span_slider = int(document.getElementById("input_span").value)
-    # Map 0-100 slider to 1s -> Duration range
     span_sec = 1.0 + (span_slider / 100.0) * (duration - 1.0)
     
     burst_mode = window.currentBurst
@@ -887,49 +911,39 @@ async def run_process(video_elem, target_count, base_width, smear_val, depth_mod
         center = duration * index_pct
         half_span = span_sec / 2.0
         
-        # Initial bounds
         start_time = center - half_span
         end_time = center + half_span
         
-        # Check Left Wall (Start < 0)
         if start_time < 0:
             diff = 0 - start_time
             start_time = 0
             end_time += diff
             
-        # Check Right Wall (End > Duration)
         if end_time > duration:
             diff = end_time - duration
             end_time = duration
             start_time -= diff
-            # Safety check if span > duration
             if start_time < 0: start_time = 0
 
     else:
-        # Explicitly force full duration in fit mode
+        # Explicit Fit Mode
         start_time = 0.0
         end_time = duration
 
     available_time = end_time - start_time
     
-    # Default step if NO rhythm is applied
-    # Fallback ensures we don't divide by zero if target_count is 1
-    base_step = available_time / max(1, target_count)
-    if base_step < 0.001: base_step = 0.001
-
-    # RHYTHM LOGIC SETUP
-    # Burst map (frames to take sequentially): Soft=1, Med=3, Hard=10
-    burst_limit = 1
-    if burst_mode == 'med': burst_limit = 3
-    if burst_mode == 'hard': burst_limit = 10
-    if burst_mode == 'mix': burst_limit = random.randint(1, 5)
+    # ELASTIC RHYTHM LOGIC (V17.5)
+    burst_map = generate_burst_map(target_count, burst_mode)
+    total_burst_frames = sum(burst_map)
+    frame_dur = 0.033 * smear_val
+    total_burst_time = total_burst_frames * frame_dur
     
-    # Gap map (time to skip in sec): Close=0, Med=0.5, Far=2.0
-    gap_sec = 0.0
-    if gap_mode == 'med': gap_sec = 0.5
-    if gap_mode == 'far': gap_sec = 2.0
-    if gap_mode == 'mix': gap_sec = random.uniform(0.1, 1.0)
+    remaining_time = available_time - total_burst_time
     
+    gap_time = 0
+    if remaining_time > 0 and target_count > 1:
+        gap_time = remaining_time / (target_count - 1)
+        
     # PREPARE CANVAS
     est_width = target_count * base_width * smear_val + (target_count * int(x_jitter * scale))
     out_canvas.width = est_width
@@ -945,21 +959,24 @@ async def run_process(video_elem, target_count, base_width, smear_val, depth_mod
     # THE LOOP
     current_time = start_time
     x_pos = 0
-    idx = 0
-    burst_counter = 0
     
-    # We iterate by STITCH COUNT (geometry driven), but time advances rhythmically
     for i in range(target_count):
-        if current_time >= end_time: break
+        if current_time > duration: break
         
-        video_elem.currentTime = current_time
-        if i == 0: await asyncio.sleep(0.15)
-        else: await asyncio.sleep(0.04)
+        # Get burst size
+        my_burst_count = burst_map[i]
         
-        try: ctx.drawImage(video_elem, 0, 0, w, h)
-        except: break
+        # Execute Burst
+        for b in range(my_burst_count):
+             # USE SMART SEEK INSTEAD OF BLIND ASSIGNMENT
+             await await_seek(video_elem, current_time)
+             
+             try: ctx.drawImage(video_elem, 0, 0, w, h)
+             except: break
+             
+             current_time += frame_dur
         
-        # DRAW LOGIC (Same as V16)
+        # DRAW LOGIC
         y_off = 0; x_var = 0
         if i < len(y_vals):
             y_off = y_vals[i]; x_var = x_vals[i]
@@ -1003,24 +1020,8 @@ async def run_process(video_elem, target_count, base_width, smear_val, depth_mod
         # ADVANCE CANVAS
         x_pos += this_slit
         
-        # ADVANCE TIME (RHYTHM ENGINE - TIME DILATED)
-        burst_counter += 1
-        
-        # If Rhythm is effectively off (Soft Burst + Close Gap), use standard linear step
-        if burst_mode == 'soft' and gap_mode == 'close':
-             current_time += (base_step * smear_val)
-        else:
-            # Rhythmic Stepping
-            if burst_counter < burst_limit:
-                # Inside a burst: advance 1 frame (approx 0.033s)
-                current_time += (0.033 * smear_val)
-            else:
-                # End of burst: add gap
-                current_time += gap_sec
-                burst_counter = 0
-                # Re-roll mix if needed
-                if burst_mode == 'mix': burst_limit = random.randint(1, 5)
-                if gap_mode == 'mix': gap_sec = random.uniform(0.1, 1.0)
+        # APPLY ELASTIC GAP
+        current_time += gap_time
 
         if i % 50 == 0: await asyncio.sleep(0.001)
 
