@@ -3,7 +3,7 @@
 <head>
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,user-scalable=no" />
-    <title>Baalsamic V17.2</title>
+    <title>Baalsamic V17.4</title>
 
     <style>
         /* --- BASE --- */
@@ -68,7 +68,7 @@
             display: flex; justify-content: space-between; align-items: center; 
             padding: 0 10px; background: #0d0d0d; border-bottom: 1px solid #333; z-index: 10; 
         }
-        .tuner-header h2 { margin: 0; color: #ff0055; font-size: 1.0em; letter-spacing: 1px; display: none; } /* Hidden on mobile to save space */
+        .tuner-header h2 { margin: 0; color: #ff0055; font-size: 1.0em; letter-spacing: 1px; display: none; } 
         @media (min-width: 600px) { .tuner-header h2 { display: block; } }
 
         /* LIGHTBOX FIX */
@@ -109,7 +109,7 @@
         }
         #crop-lens:active { cursor: grabbing; border-color: #fff; }
 
-        /* CONTROLS (DEBUG BORDER ADDED) */
+        /* CONTROLS */
         .editor-controls { 
             flex: 1;                
             max-height: 50dvh;      
@@ -117,8 +117,7 @@
             flex-shrink: 0; 
             background: #111; 
             border-top: 1px solid #333; 
-            /* DEBUG: Visualize Layout issues on P9P */
-            border-bottom: 2px solid red; 
+            border-bottom: 2px solid red; /* Debug border preserved for P9P check */
             z-index: 20; 
             display: flex; 
             flex-direction: column; 
@@ -228,7 +227,7 @@
     <div id="overlay"><div class="loader"></div><div id="overlay-text">BOOTING SYSTEM...</div></div>
 
     <div id="screen-ingest" class="container">
-        <h1>BAALSAMIC V17.2</h1>
+        <h1>BAALSAMIC V17.4</h1>
         
         <div class="config-panel">
             <span class="config-label">Sampling Rate (FPS)</span>
@@ -255,7 +254,7 @@
         </div>
         
         <div class="dev-section">
-            <div class="arch-info"><strong>V17.2 Architecture:</strong><br>New Accordion Structure.<br>Pixel Counter + 4K Warning.<br>Debug Mode Active.</div>
+            <div class="arch-info"><strong>V17.4 Architecture:</strong><br>Time Dilation + Sliding Window.<br>Numerical Time Labels (Index/Span).<br>Proportional Span Scaling.</div>
             <div id="debug-panel"><h4>KERNEL LOG</h4><pre id="debug_pre">Initializing...</pre></div>
         </div>
     </div>
@@ -294,11 +293,13 @@
                         </div>
                         <div class="control-row" id="row_index">
                             <label>INDEX</label>
-                            <input type="range" id="input_index" min="0" max="100" value="50" onchange="triggerUpdate()">
+                            <input type="range" id="input_index" min="0" max="100" value="50" oninput="updateTimeLabels()" onchange="triggerUpdate()">
+                            <span id="val_idx_time" class="coord-val" style="width:40px;">0.0s</span>
                         </div>
                         <div class="control-row" id="row_span">
                             <label>SPAN</label>
-                            <input type="range" id="input_span" min="1" max="10" value="2" onchange="triggerUpdate()">
+                            <input type="range" id="input_span" min="0" max="100" value="20" oninput="updateTimeLabels()" onchange="triggerUpdate()">
+                            <span id="val_span_time" class="coord-val" style="width:40px;">5.0s</span>
                         </div>
                     </div>
                 </details>
@@ -421,7 +422,7 @@
 
     const RANGES = {
         organic: { count: 60, z: 8, w: 100 },
-        radical: { count: 500, z: 90, w: 200 } // Width bumped to 200
+        radical: { count: 500, z: 90, w: 200 } 
     };
 
     function updateFileLabel() {
@@ -451,7 +452,7 @@
         const zInput = document.getElementById('input_zjitter');
         
         countInput.max = limits.count;
-        widthInput.max = limits.w; // Update width max
+        widthInput.max = limits.w;
         zInput.max = limits.z;
         
         if (window.isRadical) {
@@ -485,6 +486,23 @@
         display.innerText = totalW + "px";
         if (totalW > 15000) display.classList.add('danger');
         else display.classList.remove('danger');
+        
+        updateTimeLabels();
+    }
+    
+    function updateTimeLabels() {
+        const vid = document.getElementById('hidden_video');
+        const dur = vid.duration || 0;
+        
+        // Update Index Timestamp
+        const idxVal = document.getElementById('input_index').value;
+        const timeVal = (idxVal / 100) * dur;
+        document.getElementById('val_idx_time').innerText = timeVal.toFixed(1) + "s";
+        
+        // Update Span Timestamp (Map 0-100 to 1s-Duration)
+        const spanVal = document.getElementById('input_span').value;
+        const spanSec = 1.0 + (spanVal / 100.0) * (dur - 1.0);
+        document.getElementById('val_span_time').innerText = spanSec.toFixed(1) + "s";
     }
     
     function calculateGoldenStart() {
@@ -747,7 +765,7 @@
             const burst = window.currentBurst;
             const gap = window.currentGap;
             
-            const filename = `BAAL_${window.sourceFilename}_v17.2_${anchor}_b-${burst}_g-${gap}_c${count}_w${width}.png`;
+            const filename = `BAAL_${window.sourceFilename}_v17.4_${anchor}_b-${burst}_g-${gap}_c${count}_w${width}.png`;
 
             const link = document.createElement('a');
             link.download = filename;
@@ -822,7 +840,14 @@ async def update_preview(*args):
     # MEMORY PARAMS
     anchor_mode = window.currentAnchor
     index_pct = int(document.getElementById("input_index").value) / 100.0
-    span_sec = int(document.getElementById("input_span").value)
+    
+    # Span is now a percentage mapped to duration inside Python to match UI
+    video = document.getElementById("hidden_video")
+    duration = video.duration
+    span_slider = int(document.getElementById("input_span").value)
+    # Map 0-100 slider to 1s -> Duration range
+    span_sec = 1.0 + (span_slider / 100.0) * (duration - 1.0)
+    
     burst_mode = window.currentBurst
     gap_mode = window.currentGap
     
@@ -831,7 +856,6 @@ async def update_preview(*args):
     smear = window.currentSmear
     depth = window.currentDepth
     
-    video = document.getElementById("hidden_video")
     
     await run_process(video, count, width, smear, depth, anchor_mode, index_pct, span_sec, burst_mode, gap_mode, x_jit, y_jit, z_jit, res, "main_canvas", fps)
     
@@ -859,15 +883,40 @@ async def run_process(video_elem, target_count, base_width, smear_val, depth_mod
     end_time = duration
     
     if anchor_mode == 'focus':
+        # SLIDING WINDOW LOGIC
         center = duration * index_pct
         half_span = span_sec / 2.0
-        start_time = max(0.0, center - half_span)
-        end_time = min(duration, center + half_span)
-    
+        
+        # Initial bounds
+        start_time = center - half_span
+        end_time = center + half_span
+        
+        # Check Left Wall (Start < 0)
+        if start_time < 0:
+            diff = 0 - start_time
+            start_time = 0
+            end_time += diff
+            
+        # Check Right Wall (End > Duration)
+        if end_time > duration:
+            diff = end_time - duration
+            end_time = duration
+            start_time -= diff
+            # Safety check if span > duration
+            if start_time < 0: start_time = 0
+
+    else:
+        # Explicitly force full duration in fit mode
+        start_time = 0.0
+        end_time = duration
+
     available_time = end_time - start_time
-    # Default step if NO rhythm is applied
-    base_step = available_time / max(1, target_count)
     
+    # Default step if NO rhythm is applied
+    # Fallback ensures we don't divide by zero if target_count is 1
+    base_step = available_time / max(1, target_count)
+    if base_step < 0.001: base_step = 0.001
+
     # RHYTHM LOGIC SETUP
     # Burst map (frames to take sequentially): Soft=1, Med=3, Hard=10
     burst_limit = 1
