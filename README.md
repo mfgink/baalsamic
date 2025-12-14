@@ -1,111 +1,84 @@
-Baalsamic: The Client-Side Kinetic Stitcher
-===========================================
 
-> **"Your browser is the render farm."**
+###**New File: README.md [20251214-1448]**```markdown
+# BAALSAMIC v18.0
+### Browser-Based Slit-Scan Time Travel Engine
 
-**Baalsamic** is a web-based kinetic photography engine that democratizes complex "slit-scan" and "time-displacement" glitch art.
+**Baalsamic** is a single-file, client-side application that performs complex slit-scan video processing entirely in the browser. Powered by Python (via Pyodide/WASM) and HTML5 Canvas, it transforms standard video files into organic, rhythmic, or chaotic static compositions.
 
-[TRY IT HERE](https://mfg.wpengine.com/baalsamic.html)
+---
 
-Unlike traditional generative art tools that require expensive desktop software, command-line scripts, or server-side processing, Baalsamic runs **100% locally in your browser** using WebAssembly. It puts the power of Python-based video processing directly onto your mobile device, allowing for privacy-focused, zero-latency experimentation.
+## 🚀 Key Features
 
-Key Features
-------------
+* **Zero-Upload Architecture:** All processing happens locally on your device using WebAssembly. No video data is ever sent to a server.
+* **Elastic Rhythm Engine:** A "Time Budgeting" system that dynamically calculates gaps between bursts to ensure your renders match the exact time span you requested.
+* **Smart Seek (Mobile Optimized):** Features a hardware-aware rendering loop that waits for video decoders to catch up, preventing frame drift and "ghosting" on mobile devices (Optimized for Pixel 9 Pro).
+* **Entropy Control:** Variable X/Y jitter injection to break the "grid" and create organic, painterly textures.
+* **Radical UI:** A high-contrast, touch-friendly interface designed for both desktop precision and mobile experimentation.
 
-### The "Split-Brain" Engine
+---
 
-We separated the logic into two distinct engines to give you granular control over the chaos:
+## 🎛️ The Logic (How it Works)
 
-*   **Geometry Engine (Space):** Control the physical world. Slice width, density, and x/y/z jitter. Shatter your image into 500+ distinct strips.
-    
-*   **Memory Engine (Time):** Control the temporal world. Use the **Focus** and **Anchor** tools to target specific moments in time, or use the **Bag RNG** algorithm to weave time non-linearly without repetitive patterns.
-    
+Baalsamic deconstructs video into four core dimensions.
 
-### Mobile-First Architecture
+### 1. THE MEMORY (Timeline)
+Controls *when* the engine looks.
+* **Index:** The starting point in the video timeline.
+* **Span:** The total duration of time to capture across the image.
+* *Modes:*
+    * `FIT`: Forces the timeline to cover the entire duration of the video.
+    * `FOCUS`: Focuses on a specific percentage of the video around the Index.
 
-Built and tested on flagship hardware (Pixel 9 Pro), Baalsamic is engineered to survive the constraints of mobile browsers:
+### 2. THE GEOMETRY (Space)
+Controls *how* the image is constructed.
+* **Stitches:** The number of vertical slices to cut. (More = smoother image).
+* **Width:** The thickness of each slice in pixels. (Wider = more context).
+* **Depth:** Controls the layering order (Left-to-Right vs Right-to-Left).
 
-*   **Dynamic Viewport (dvh):** UI elements respect system navigation bars and mobile chrome.
-    
-*   **Hard Containment:** Off-screen canvas elements are strictly managed to prevent "ghost scrolling."
-    
-*   **Memory Guardrails:** Intelligent input clamping prevents your GPU from crashing when things get too wild.
-    
+### 3. THE RHYTHM (Time)
+Controls the pulse of the capture.
+* **Burst ("The Open Eye"):** How long the camera records *during* a single stitch. High bursts create motion blur; low bursts create sharp freezes.
+* **Gap ("The Blink"):** How much time disappears *between* stitches. The engine automatically stretches this silence to fit your Span.
 
-### Dual-Mode Interface
+### 4. THE ENTROPY (Chaos)
+Controls the imperfection.
+* **Jitter ("The Footing"):** How stable the camera's grip is on the timeline.
+    * *Sure Footing (Low):* A perfect, mechanical grid.
+    * *Lost Footing (High):* The camera slips on the X-axis (width) and shakes on the Y-axis (position), creating organic distortion.
 
-*   **Organic Mode (Safe):** Curated limits ensure beautiful, stable results. Perfect for learning the tool.
-    
-*   **!RAD Mode (Radical):** Unlock the safety clamps. Push the stitch count to 500+. Rotate Z-depth by 90°. Force the browser to its absolute breaking point for the sake of art.
-    
+---
 
-### 100% Local & Private
+## 🛠️ Installation & Usage
 
-No server uploads. No cloud fees. Your video files never leave your device. Baalsamic utilizes **Pyodide** to load a full Python kernel into your browser's WebAssembly runtime, processing pixel data in-memory.
+### Running Locally
+Baalsamic is designed as a standalone system.
+1.  Download `index.html`.
+2.  Open it in any modern web browser (Chrome, Firefox, Edge).
+3.  **Note:** Requires an active internet connection on first load to fetch the Pyodide engine (approx 10MB).
 
-Technical Architecture
-----------------------
+### Hosting
+Simply upload `index.html` to any static host (GitHub Pages, Netlify, WP Engine, or an S3 bucket). No backend is required.
 
-Baalsamic bridges the gap between high-level Python logic and high-performance web rendering.
+---
 
-### The Stack
+## 📱 Mobile Performance Note
+Slit-scanning 4K video is computationally expensive.
+* **Battery:** This application forces the device's video decoder to seek non-linearly 30-60 times per second. Expect high battery consumption during extended sessions.
+* **Initialization:** On mobile devices, the initial "Ingest" phase may take 5-10 seconds as the Smart Seek system creates a cache of the video stream.
 
-*   **Core Logic:** Python (via Pyodide/WASM).
-    
-*   **Rendering:** HTML5 Canvas API.
-    
-*   **Frontend:** Vanilla JavaScript (ES6+) & CSS3 Variables.
-    
-*   **Processing:** Client-side FFMPEG (via WASM) for frame extraction.
-    
+---
 
-### Engineering Highlights
+## 📜 Version History
 
-*   **Bag RNG Algorithm:** Replaced standard random.uniform distribution with a "Bag" approach to eliminate the "Venetian Blind" pendulum bias common in random slit-scans.
-    
-*   **Warmup Sequence:** Implemented a decoder seek-sequence (0.5s -> 0.0s) to force mobile browser video decoders to wake up, solving the "Ghost Start" (black initial frame) bug.
-    
-*   **Thread Blocking Management:** Heavy processing tasks are chunked to prevent the UI thread from locking up completely during high-density renders.
-    
+* **v18.0 (Current):** Added Info Modal, Concurrency Locking (prevents ghost renders), and "Organic Start" defaults.
+* **v17.8:** Fixed mobile frame drift, implemented pixel-safe layout for Android gesture bars.
+* **v17.5:** Introduced "Elastic Rhythm" logic.
+* **v17.0:** Migrated kernel to Pyodide/WASM.
 
-Installation & Usage
---------------------
+---
 
-Because Baalsamic is client-side, it requires no backend setup. However, due to browser security policies (CORS) regarding local video files and WebAssembly, it must be served via a local HTTP server.
+**License:** MIT
 
-### Prerequisites
+```
 
-*   A modern web browser with WebAssembly support (Chrome, Firefox, Safari).
-    
-*   Python 3.x (for running a local server).
-    
-
-### Quick Start
-
-1.  git clone \[https://github.com/yourusername/baalsamic-engine.git\](https://github.com/yourusername/baalsamic-engine.git)cd baalsamic-engine
-    
-2.  \# Python 3python -m http.server 8000
-    
-3.  Open http://localhost:8000/indexv17.html in your browser.
-    
-4.  Drag and drop an .mp4 or .mov file into the drop zone. Wait for the "Ready" indicator.
-    
-
-Roadmap
--------
-
-*   **V17.x (Current):** Refinement of the "Memory Engine" and file naming conventions.
-    
-*   **V18.0:** "Free Crop" lens to remove fixed aspect ratio constraints.
-    
-*   **V19.0:** "Recipes" System – Saving and loading complex configuration presets via JSON strings.
-    
-
-License
--------
-
-This project is licensed under the MIT License - see the [LICENSE.md](https://gemini.google.com/app/LICENSE.md) file for details.
-
-Concept & Code by MFG Solutions.
-
-Powered by Pyodide.
+**Would you like me to create a Google Doc with this content, or are you copying it directly to your repo?**
