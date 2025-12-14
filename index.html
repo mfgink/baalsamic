@@ -3,7 +3,7 @@
 <head>
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,user-scalable=no" />
-    <title>Baalsamic V17.6</title>
+    <title>Baalsamic V18.0</title>
 
     <style>
         /* --- BASE --- */
@@ -54,6 +54,15 @@
             padding: 8px 12px; cursor: pointer; border-radius: 4px; 
             font-size: 0.75em; white-space: nowrap; font-weight: bold; 
             text-transform: uppercase;
+            min-width: 80px; 
+        }
+
+        /* INFO BUTTON */
+        .btn-info {
+            width: 24px; height: 24px; border-radius: 50%;
+            background: #333; border: 1px solid #555; color: #00ffcc;
+            font-weight: bold; font-size: 0.8em; display: flex; align-items: center; justify-content: center;
+            cursor: pointer; font-family: serif; font-style: italic;
         }
 
         /* PIXEL COUNTER */
@@ -112,25 +121,25 @@
         /* CONTROLS (PIXEL 9 PRO FIXES) */
         .editor-controls { 
             flex: 1;                
-            max-height: 45dvh;  /* Reduced from 50dvh to avoid nav bar overlap */    
+            max-height: 45dvh;  
             min-height: 250px;      
             flex-shrink: 0; 
             background: #111; 
             border-top: 1px solid #333; 
-            border-bottom: 2px solid red; /* Debug border preserved */
+            border-bottom: 2px solid red; 
             z-index: 20; 
             display: flex; 
             flex-direction: column; 
             padding: 0;
             box-sizing: border-box;
-            padding-bottom: env(safe-area-inset-bottom); /* iOS/Android Safe Area */
+            padding-bottom: env(safe-area-inset-bottom);
         }
 
         .controls-scroll {
             flex-grow: 1;
             overflow-y: auto;
             padding: 15px 0;
-            padding-bottom: 80px; /* Massive buffer for bottom controls */
+            padding-bottom: 80px; 
         }
 
         /* ACCORDIONS */
@@ -221,14 +230,60 @@
         #debug_pre { white-space: pre-wrap; margin: 0; }
 
         video, #hidden_canvas { position: fixed; top: -9999px; left: -9999px; opacity: 0; pointer-events: none; }
+
+        /* INFO MODAL */
+        #info-modal {
+            display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%;
+            background: rgba(0,0,0,0.9); z-index: 9999;
+            align-items: center; justify-content: center;
+            backdrop-filter: blur(5px);
+        }
+        .modal-content {
+            background: #111; border: 1px solid #ff0055; padding: 25px;
+            max-width: 500px; width: 90%; max-height: 80vh; overflow-y: auto;
+            border-radius: 8px; box-shadow: 0 0 20px rgba(255, 0, 85, 0.2);
+        }
+        .modal-section { margin-bottom: 20px; }
+        .modal-title { color: #ff0055; font-size: 1.1em; border-bottom: 1px solid #333; padding-bottom: 5px; margin-bottom: 10px; text-transform: uppercase; letter-spacing: 1px; }
+        .modal-item { margin-bottom: 8px; color: #ccc; font-size: 0.9em; line-height: 1.4; }
+        .modal-item strong { color: #00ffcc; }
+        .close-modal { text-align: center; margin-top: 20px; color: #666; font-size: 0.8em; cursor: pointer; text-decoration: underline; }
+
     </style>
 </head>
 <body>
 
     <div id="overlay"><div class="loader"></div><div id="overlay-text">BOOTING SYSTEM...</div></div>
 
+    <div id="info-modal" onclick="document.getElementById('info-modal').style.display='none'">
+        <div class="modal-content" onclick="event.stopPropagation()">
+            <div class="modal-section">
+                <div class="modal-title">THE MEMORY (Timeline)</div>
+                <div class="modal-item"><strong>Index:</strong> The starting point in the video.</div>
+                <div class="modal-item"><strong>Span:</strong> The total amount of time you want to capture.</div>
+            </div>
+            <div class="modal-section">
+                <div class="modal-title">THE GEOMETRY (Space)</div>
+                <div class="modal-item"><strong>Stitches:</strong> How many slices to cut. (More = smoother image).</div>
+                <div class="modal-item"><strong>Width:</strong> How thick each slice is. (Wider = more content visible).</div>
+            </div>
+            <div class="modal-section">
+                <div class="modal-title">THE RHYTHM (Time)</div>
+                <div class="modal-item"><strong>Burst ("The Open Eye"):</strong> How long the camera records <em>during</em> a stitch.</div>
+                <div class="modal-item"><strong>Gap ("The Blink"):</strong> How much time disappears <em>between</em> stitches.</div>
+            </div>
+            <div class="modal-section">
+                <div class="modal-title">THE ENTROPY (Chaos)</div>
+                <div class="modal-item"><strong>Jitter ("The Footing"):</strong> How stable the camera's grip is on the timeline.</div>
+                <div class="modal-item"><em>Sure Footing:</em> A perfect, mechanical grid.</div>
+                <div class="modal-item"><em>Lost Footing:</em> The camera slips and shakes, creating organic distortion.</div>
+            </div>
+            <div class="close-modal" onclick="document.getElementById('info-modal').style.display='none'">CLOSE</div>
+        </div>
+    </div>
+
     <div id="screen-ingest" class="container">
-        <h1>BAALSAMIC V17.6</h1>
+        <h1>BAALSAMIC V18.0</h1>
         
         <div class="config-panel">
             <span class="config-label">Sampling Rate (FPS)</span>
@@ -255,7 +310,7 @@
         </div>
         
         <div class="dev-section">
-            <div class="arch-info"><strong>V17.6 Architecture:</strong><br>Smart Seek (Mobile Fix).<br>Elastic Rhythm (Span = Master).<br>Pixel 9 Pro Layout Fixes.<br>Percentage Span Readout.</div>
+            <div class="arch-info"><strong>V18.0 Architecture:</strong><br>Info Modal Added.<br>Concurrency Lock Active.<br>Smart Seek + Elastic Rhythm.<br>Organic Start (X-Jit 30).</div>
             <div id="debug-panel"><h4>KERNEL LOG</h4><pre id="debug_pre">Initializing...</pre></div>
         </div>
     </div>
@@ -265,6 +320,7 @@
             <h2>TIME TRAVEL</h2>
             <div class="header-buttons">
                 <span id="pixel_count" class="pixel-display">0px</span>
+                <button class="btn-info" onclick="document.getElementById('info-modal').style.display='flex'">i</button>
                 <button class="btn-radical" id="btn_radical" onclick="toggleRadicalMode()">!RAD</button>
                 <button class="btn-secondary" id="btn_reset">RESET</button>
                 <button class="btn-secondary" id="close_tuner">BACK</button>
@@ -305,7 +361,7 @@
                     </div>
                 </details>
 
-                <details>
+                <details open>
                     <summary>GEOMETRY</summary>
                     <div class="control-group">
                         <div class="control-row">
@@ -509,15 +565,23 @@
     function calculateGoldenStart() {
         const screenW = window.innerWidth;
         const targetW = Math.floor(screenW * 0.8);
-        const stitchW = 20; 
+        
+        // MOBILE OPTIMIZATION
+        let stitchW = 40; 
         let count = Math.floor(targetW / stitchW);
         
-        if (count < 10) count = 10;
+        if (screenW < 600 && count < 14) {
+            count = 14;
+            // Recalculate width to fit 14 stitches
+            stitchW = Math.floor(targetW / 14);
+            if(stitchW < 1) stitchW = 1;
+        }
+        
         if (count > RANGES.organic.count) count = RANGES.organic.count; 
 
         document.getElementById('input_count').value = count;
         document.getElementById('input_width').value = stitchW;
-        document.getElementById('input_xjitter').value = 0;
+        document.getElementById('input_xjitter').value = 30; // ORGANIC START
         document.getElementById('input_yjitter').value = 0;
         document.getElementById('input_zjitter').value = 0;
         
@@ -684,7 +748,12 @@
     window.addEventListener('mousemove', doDrag); window.addEventListener('touchmove', doDrag, {passive: false});
     window.addEventListener('mouseup', stopDrag); window.addEventListener('touchend', stopDrag);
 
-    function triggerUpdate() { window.call_py("await update_preview()"); }
+    function triggerUpdate() { 
+        // OPTIONAL: Set cursor to wait immediately on UI thread
+        document.body.style.cursor = 'wait';
+        window.call_py("await update_preview()"); 
+    }
+    
     window.addEventListener('resize', () => { setTimeout(updateLensDimensions, 100); });
     function dbg(msg){ console.log(msg); const pre = document.getElementById("debug_pre"); if(pre) { pre.textContent = (pre.textContent + "\n> " + msg).slice(-5000); const panel = document.getElementById("debug-panel"); if(panel) panel.scrollTop = panel.scrollHeight; } const ov = document.getElementById("overlay"); if(ov && ov.style.display !== "none") { document.getElementById("overlay-text").innerText = msg.toUpperCase(); } }
 
@@ -766,7 +835,7 @@
             const burst = window.currentBurst;
             const gap = window.currentGap;
             
-            const filename = `BAAL_${window.sourceFilename}_v17.6_${anchor}_b-${burst}_g-${gap}_c${count}_w${width}.png`;
+            const filename = `BAAL_${window.sourceFilename}_v18.0_${anchor}_b-${burst}_g-${gap}_c${count}_w${width}.png`;
 
             const link = document.createElement('a');
             link.download = filename;
@@ -785,16 +854,14 @@
 from js import document, console, localStorage, JSON, window, setTimeout
 import asyncio, random, math
 
-# --- NEW SEEK UTILITY FOR MOBILE FIX ---
+# --- RENDER GENERATION LOCK ---
+render_generation = 0
+
 async def await_seek(video_elem, target_time):
     video_elem.currentTime = target_time
-    
-    # 1. Standard sleep to let the request register
     await asyncio.sleep(0.04) 
     
-    # 2. Smart Lock: Wait for the browser to report "I am ready"
-    # We timeout after 1.0s to prevent infinite loops on broken files
-    timeout = 20 # 20 * 50ms = 1.0s
+    timeout = 20
     while video_elem.seeking and timeout > 0:
         await asyncio.sleep(0.05)
         timeout -= 1
@@ -853,6 +920,10 @@ async def ingest_video(*args):
     document.getElementById("overlay").style.display = "none"
 
 async def update_preview(*args):
+    global render_generation
+    render_generation += 1
+    my_gen = render_generation
+
     # GEOMETRY
     count = int(document.getElementById("input_count").value)
     width = int(document.getElementById("input_width").value)
@@ -866,7 +937,6 @@ async def update_preview(*args):
     anchor_mode = window.currentAnchor
     index_pct = int(document.getElementById("input_index").value) / 100.0
     
-    # Span (Percentage to Seconds)
     video = document.getElementById("hidden_video")
     duration = video.duration
     span_slider = int(document.getElementById("input_span").value)
@@ -880,12 +950,11 @@ async def update_preview(*args):
     smear = window.currentSmear
     depth = window.currentDepth
     
-    
-    await run_process(video, count, width, smear, depth, anchor_mode, index_pct, span_sec, burst_mode, gap_mode, x_jit, y_jit, z_jit, res, "main_canvas", fps)
+    await run_process(video, count, width, smear, depth, anchor_mode, index_pct, span_sec, burst_mode, gap_mode, x_jit, y_jit, z_jit, res, "main_canvas", fps, my_gen)
     
     window.updateLensDimensions()
 
-async def run_process(video_elem, target_count, base_width, smear_val, depth_mode, anchor_mode, index_pct, span_sec, burst_mode, gap_mode, x_jitter, y_jitter, z_jitter, target_height, canvas_id, target_fps):
+async def run_process(video_elem, target_count, base_width, smear_val, depth_mode, anchor_mode, index_pct, span_sec, burst_mode, gap_mode, x_jitter, y_jitter, z_jitter, target_height, canvas_id, target_fps, my_gen):
     canvas = document.getElementById("hidden_canvas")
     ctx = canvas.getContext("2d")
     out_canvas = document.getElementById(canvas_id)
@@ -907,39 +976,31 @@ async def run_process(video_elem, target_count, base_width, smear_val, depth_mod
     end_time = duration
     
     if anchor_mode == 'focus':
-        # SLIDING WINDOW LOGIC
         center = duration * index_pct
         half_span = span_sec / 2.0
-        
         start_time = center - half_span
         end_time = center + half_span
-        
         if start_time < 0:
             diff = 0 - start_time
             start_time = 0
             end_time += diff
-            
         if end_time > duration:
             diff = end_time - duration
             end_time = duration
             start_time -= diff
             if start_time < 0: start_time = 0
-
     else:
-        # Explicit Fit Mode
         start_time = 0.0
         end_time = duration
 
     available_time = end_time - start_time
     
-    # ELASTIC RHYTHM LOGIC (V17.5)
+    # ELASTIC RHYTHM LOGIC
     burst_map = generate_burst_map(target_count, burst_mode)
     total_burst_frames = sum(burst_map)
     frame_dur = 0.033 * smear_val
     total_burst_time = total_burst_frames * frame_dur
-    
     remaining_time = available_time - total_burst_time
-    
     gap_time = 0
     if remaining_time > 0 and target_count > 1:
         gap_time = remaining_time / (target_count - 1)
@@ -961,19 +1022,26 @@ async def run_process(video_elem, target_count, base_width, smear_val, depth_mod
     x_pos = 0
     
     for i in range(target_count):
+        # CONCURRENCY CHECK
+        global render_generation
+        if render_generation != my_gen:
+            return 
+
         if current_time > duration: break
         
-        # Get burst size
-        my_burst_count = burst_map[i]
+        # UI FEEDBACK
+        msg = f"{i}/{target_count}"
+        try:
+            document.getElementById('overlay-text').innerText = f"SCANNING {msg}..."
+            document.getElementById('btn_render_final').innerText = f"{msg}"
+        except: pass
         
-        # Execute Burst
+        # BURST EXECUTION
+        my_burst_count = burst_map[i]
         for b in range(my_burst_count):
-             # USE SMART SEEK INSTEAD OF BLIND ASSIGNMENT
              await await_seek(video_elem, current_time)
-             
              try: ctx.drawImage(video_elem, 0, 0, w, h)
              except: break
-             
              current_time += frame_dur
         
         # DRAW LOGIC
@@ -1017,13 +1085,14 @@ async def run_process(video_elem, target_count, base_width, smear_val, depth_mod
             except: pass
             out_ctx.restore()
         
-        # ADVANCE CANVAS
+        # ADVANCE CANVAS & TIME
         x_pos += this_slit
-        
-        # APPLY ELASTIC GAP
         current_time += gap_time
 
-        if i % 50 == 0: await asyncio.sleep(0.001)
+    # FINALIZE
+    if render_generation == my_gen:
+        document.getElementById('btn_render_final').innerText = "RENDER"
+        document.body.style.cursor = 'default'
 
     # TRIM & SEAL
     final_width = int(x_pos)
