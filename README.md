@@ -80,5 +80,3 @@ Slit-scanning 4K video is computationally expensive.
 **License:** MIT
 
 ```
-
-**Would you like me to create a Google Doc with this content, or are you copying it directly to your repo?**
