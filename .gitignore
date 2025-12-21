@@ -1,0 +1,17 @@
+# Windows system files
+Thumbs.db
+Desktop.ini
+$RECYCLE.BIN/
+
+# Python (Crucial for your python/ folder)
+__pycache__/
+*.pyc
+*.pyo
+*.pyd
+.Python
+env/
+venv/
+
+# Web & Logs
+*.log
+.DS_Store
