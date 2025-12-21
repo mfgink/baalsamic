@@ -1,81 +1,82 @@
+# BAALSAMIC
 
-# BAALSAMIC v18.0
-### Browser-Based Slit-Scan Time Travel Engine
+**v19.14 "Time Travel" Release**
 
-**Baalsamic** is a single-file, client-side application that performs complex slit-scan video processing entirely in the browser. Powered by Python (via Pyodide/WASM) and HTML5 Canvas, it transforms standard video files into organic, rhythmic, or chaotic static compositions.
+Baalsamic is a browser-based, single-file **Slit-Scan Generator**. It uses WebAssembly (Pyodide) to run a full Python image processing engine entirely inside your web browser, allowing for "Darkroom-style" temporal photography manipulation without server-side processing.
 
----
-
-## 🚀 Key Features
-
-* **Zero-Upload Architecture:** All processing happens locally on your device using WebAssembly. No video data is ever sent to a server.
-* **Elastic Rhythm Engine:** A "Time Budgeting" system that dynamically calculates gaps between bursts to ensure your renders match the exact time span you requested.
-* **Smart Seek (Mobile Optimized):** Features a hardware-aware rendering loop that waits for video decoders to catch up, preventing frame drift and "ghosting" on mobile devices (Optimized for Pixel 9 Pro).
-* **Entropy Control:** Variable X/Y jitter injection to break the "grid" and create organic, painterly textures.
-* **Radical UI:** A high-contrast, touch-friendly interface designed for both desktop precision and mobile experimentation.
+> **Status:** Stable / Beta
+> **Architecture:** HTML5 + CSS3 + Pyodide (WASM) v0.24.1
 
 ---
 
-## 🎛️ The Logic (How it Works)
+## ⚡ What's New in v19.14
 
-Baalsamic deconstructs video into four core dimensions.
-
-### 1. THE MEMORY (Timeline)
-Controls *when* the engine looks.
-* **Index:** The starting point in the video timeline.
-* **Span:** The total duration of time to capture across the image.
-* *Modes:*
-    * `FIT`: Forces the timeline to cover the entire duration of the video.
-    * `FOCUS`: Focuses on a specific percentage of the video around the Index.
-
-### 2. THE GEOMETRY (Space)
-Controls *how* the image is constructed.
-* **Stitches:** The number of vertical slices to cut. (More = smoother image).
-* **Width:** The thickness of each slice in pixels. (Wider = more context).
-* **Depth:** Controls the layering order (Left-to-Right vs Right-to-Left).
-
-### 3. THE RHYTHM (Time)
-Controls the pulse of the capture.
-* **Burst ("The Open Eye"):** How long the camera records *during* a single stitch. High bursts create motion blur; low bursts create sharp freezes.
-* **Gap ("The Blink"):** How much time disappears *between* stitches. The engine automatically stretches this silence to fit your Span.
-
-### 4. THE ENTROPY (Chaos)
-Controls the imperfection.
-* **Jitter ("The Footing"):** How stable the camera's grip is on the timeline.
-    * *Sure Footing (Low):* A perfect, mechanical grid.
-    * *Lost Footing (High):* The camera slips on the X-axis (width) and shakes on the Y-axis (position), creating organic distortion.
+* **Visual Timeline Ruler:** Added a dynamic, pink-and-teal ruler above the canvas. It provides precise timestamps (`0.0s` to `Duration`) and updates purely based on your `Index` and `Span` settings (Focus Mode aware).
+* **Race Condition Fix:** Implemented a `Job ID` system to prevent "Teal Flicker." Stale renders now die silently in the background if a new configuration change is made.
+* **Smart Lock:** The interface no longer "hard locks" immediately upon changing a setting. You can tweak multiple sliders (e.g., Gap + Burst) during the debounce period.
+* **Engine Stability:** Reverted Pyodide engine to `v0.24.1` to resolve infinite loading loops and recursion errors on mobile/desktop.
+* **Mobile Layout Fixes:** Corrected the "Render" button expansion logic to prevent layout shifting on narrower screens (Pixel 9 Pro/iPhone).
 
 ---
 
-## 🛠️ Installation & Usage
+## 🎛️ Core Features
 
-### Running Locally
-Baalsamic is designed as a standalone system.
-1.  Download `index.html`.
-2.  Open it in any modern web browser (Chrome, Firefox, Edge).
-3.  **Note:** Requires an active internet connection on first load to fetch the Pyodide engine (approx 10MB).
+Baalsamic organizes slit-scanning into four logical "Dimensions" of control:
 
-### Hosting
-Simply upload `index.html` to any static host (GitHub Pages, Netlify, WP Engine, or an S3 bucket). No backend is required.
+### 1. MEMORY (Time)
+
+* **Mode:** Switch between `FIT` (Use whole video) and `FOCUS` (Target specific moment).
+* **Index:** Sets the center point of the capture in the video timeline.
+* **Span:** Determines the duration (width of time) to capture.
+
+### 2. GEOMETRY (Space)
+
+* **Depth:** Controls the draw order (`LTR`, `RTL`, or `MIX`).
+* **Stitch Count:** How many distinct slices to cut from time.
+* **Width:** The pixel width of each slice.
+
+### 3. RHYTHM (Motion)
+
+* **Burst:** How long the "shutter" stays open for a single stitch (Soft vs. Hard motion blur).
+* **Gap:** The amount of time skipped *between* stitches (The "Blink").
+* **Smear:** Artificial motion blur multiplier (1x - 3x).
+
+### 4. ENTROPY (Chaos)
+
+* **Jitter (X/Y):** Randomizes the spatial placement of stitches to create "shredded" effects.
+* **Jitter (Z):** Randomizes the *time* selection for each stitch, breaking linear causality.
 
 ---
 
-## 📱 Mobile Performance Note
-Slit-scanning 4K video is computationally expensive.
-* **Battery:** This application forces the device's video decoder to seek non-linearly 30-60 times per second. Expect high battery consumption during extended sessions.
-* **Initialization:** On mobile devices, the initial "Ingest" phase may take 5-10 seconds as the Smart Seek system creates a cache of the video stream.
+## 🛠️ Technical Architecture
+
+Baalsamic is unique because it is a **Polyglot Monolith** contained in a single file.
+
+* **Frontend:** Standard HTML/CSS. Handles UI state, debounce timers, and canvas rendering.
+* **Backend:** Python (running in WASM). Handles the heavy lifting of video buffer seeking, slicing, and pixel manipulation.
+* **Data Bridge:** JavaScript passes configuration objects to Python; Python returns raw pixel buffers or Base64 images to the JS Canvas.
+
+### Requirements
+
+* A modern web browser (Chrome/Edge/Firefox/Safari) with WebAssembly support.
+* **No Server Required:** You can run this locally by simply opening the `index.html` file.
 
 ---
 
-## 📜 Version History
+## 🚀 How to Run locally
 
-* **v18.0 (Current):** Added Info Modal, Concurrency Locking (prevents ghost renders), and "Organic Start" defaults.
-* **v17.8:** Fixed mobile frame drift, implemented pixel-safe layout for Android gesture bars.
-* **v17.5:** Introduced "Elastic Rhythm" logic.
-* **v17.0:** Migrated kernel to Pyodide/WASM.
+1. Clone this repository.
+2. Open `index.html` in your browser.
+3. Wait for the **"BOOTING SYSTEM..."** overlay to vanish (downloads ~10MB Pyodide engine).
+4. Load a video file (`.mp4`, `.mov`, `.webm`).
+5. Click **GET STITCHES**.
 
 ---
 
-**License:** MIT
+## ⚠️ Known Constraints
 
-```
+* **High Resolution:** 4K video processing is available but may crash mobile browser tabs due to RAM limits (iOS Safari cap is ~4GB).
+* **Conflict Matrix:** Certain settings fight for resources.
+* *Example:* High `Stitch Count` + Low `Span` = `Gap` forced to 0.
+* *Example:* Low `FPS` + High `Smear` = Choppy blur (Data Scarcity).
+
