@@ -3,7 +3,7 @@
 <head>
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,user-scalable=no" />
-    <title>Baalsamic V18.0</title>
+    <title>Baalsamic V19.14</title>
 
     <style>
         /* --- BASE --- */
@@ -39,35 +39,83 @@
         .btn-file:hover { background: #d40045; }
         .file-help { color: #666; font-size: 0.8em; margin-bottom: 20px; text-align: center;}
 
+        /* LOCK OPTION */
+        .lock-option { margin-top: 10px; text-align: center; font-size: 0.8em; color: #aaa; display: flex; justify-content: center; align-items: center; gap: 8px;}
+        .lock-option input { accent-color: #ff0055; width: 16px; height: 16px; cursor: pointer; }
+
         .btn-action { width: 100%; background: #00ffcc; color: black; border: none; padding: 15px; font-size: 1.2em; font-weight: bold; cursor: pointer; text-transform: uppercase; letter-spacing: 1px; border-radius: 4px; }
         
         /* --- HEADER BUTTONS --- */
-        .header-buttons { display: flex; gap: 8px; align-items: center; }
+        .header-buttons { 
+            display: flex; 
+            gap: 8px; 
+            align-items: center; 
+            height: 32px; 
+            flex: 1; 
+            justify-content: flex-end; 
+            min-width: 0; 
+        }
 
-        .btn-secondary { background: #333; color: #ccc; border: 1px solid #555; padding: 8px 12px; cursor: pointer; border-radius: 4px; font-size: 0.75em; white-space: nowrap; font-weight: bold; }
+        .btn-secondary { background: #333; color: #ccc; border: 1px solid #555; padding: 0 12px; height: 100%; cursor: pointer; border-radius: 4px; font-size: 0.75em; white-space: nowrap; font-weight: bold; display:flex; align-items:center;}
         
-        .btn-radical { background: #333; color: #ccc; border: 1px solid #555; padding: 8px 12px; cursor: pointer; border-radius: 4px; font-size: 0.75em; white-space: nowrap; font-weight: bold; }
+        .btn-radical { background: #333; color: #ccc; border: 1px solid #555; padding: 0 12px; height: 100%; cursor: pointer; border-radius: 4px; font-size: 0.75em; white-space: nowrap; font-weight: bold; display:flex; align-items:center; }
         .btn-radical.active { background: #ff0055; color: white; border-color: #ff0055; }
+
+        /* ACTION BAR (RENDER BUTTON) */
+        @keyframes pulse-orange { 0% { box-shadow: 0 0 2px #ffaa00; } 50% { box-shadow: 0 0 10px #ffaa00; } 100% { box-shadow: 0 0 2px #ffaa00; } }
+        @keyframes pulse-pink { 0% { box-shadow: 0 0 2px #ff0055; } 50% { box-shadow: 0 0 10px #ff0055; } 100% { box-shadow: 0 0 2px #ff0055; } }
 
         .btn-render-small { 
             background: #00ffcc; color: black; border: none; 
-            padding: 8px 12px; cursor: pointer; border-radius: 4px; 
+            padding: 0 12px; height: 100%; cursor: pointer; border-radius: 4px; 
             font-size: 0.75em; white-space: nowrap; font-weight: bold; 
             text-transform: uppercase;
             min-width: 80px; 
+            display: flex; align-items: center; justify-content: center;
+            transition: background 0.2s ease, color 0.2s ease, flex-grow 0.3s ease;
+            flex-grow: 0; 
+            flex-shrink: 0; 
+        }
+        
+        .btn-render-small.waiting {
+            background: #ffaa00; color: black;
+            flex-grow: 1; 
+            animation: pulse-orange 1.5s infinite;
+        }
+
+        .btn-render-small.processing {
+            background: #ff0055; color: white;
+            flex-grow: 1;
+            animation: pulse-pink 1.5s infinite;
         }
 
         /* INFO BUTTON */
         .btn-info {
-            width: 24px; height: 24px; border-radius: 50%;
+            width: 32px; height: 32px; border-radius: 50%;
             background: #333; border: 1px solid #555; color: #00ffcc;
             font-weight: bold; font-size: 0.8em; display: flex; align-items: center; justify-content: center;
             cursor: pointer; font-family: serif; font-style: italic;
+            flex-shrink: 0;
         }
 
         /* PIXEL COUNTER */
-        .pixel-display { font-size: 0.65em; color: #666; font-family: monospace; margin-right: 5px; text-align: right;}
-        .pixel-display.danger { color: #ff0055; font-weight: bold; }
+        .pixel-display { 
+            font-size: 1.5em; 
+            color: #00ffcc; 
+            font-family: monospace; 
+            font-weight: bold;
+            height: 100%; 
+            display: flex;
+            align-items: center;
+            justify-content: flex-end;
+            min-width: 80px;
+            margin-right: 5px;
+            letter-spacing: -1px;
+            flex-shrink: 1; 
+            white-space: nowrap;
+            overflow: hidden;
+        }
+        .pixel-display.danger { color: #ff0055; }
 
         /* --- SCREEN: TIME TRAVEL --- */
         #screen-time-travel { display: none; flex-direction: column; height: 100vh; width: 100vw; background: #000; }
@@ -77,38 +125,63 @@
             display: flex; justify-content: space-between; align-items: center; 
             padding: 0 10px; background: #0d0d0d; border-bottom: 1px solid #333; z-index: 10; 
         }
+        /* Match Header Text Size */
         .tuner-header h2 { margin: 0; color: #ff0055; font-size: 1.0em; letter-spacing: 1px; display: none; } 
         @media (min-width: 600px) { .tuner-header h2 { display: block; } }
 
         /* LIGHTBOX FIX */
         .lightbox-wrapper { 
-            flex: 1; 
-            min-height: 0; 
-            margin: 10px 0; 
-            position: relative; 
-            display: flex; 
-            align-items: center; 
-            justify-content: center; 
-            overflow: hidden; 
-            width: 100%; 
-            background: #000; 
+            flex: 1; min-height: 0; margin: 10px 0; position: relative; 
+            display: flex; flex-direction: column; 
+            align-items: center; justify-content: center; 
+            overflow: hidden; width: 100%; background: #000; 
         }
+        
+        /* RULER (V19.14) */
+        #timeline-ruler {
+            width: 0px; /* Dynamic */
+            height: 24px;
+            margin-bottom: 4px;
+            border-bottom: 2px solid #ff0055; /* PINK LINE */
+            display: flex;
+            justify-content: space-between;
+            align-items: flex-end;
+            position: relative;
+            flex-shrink: 0;
+        }
+        .ruler-label { 
+            font-size: 1.0em; /* Match Header */
+            color: #00ffcc;   /* TEAL TEXT */
+            font-family: monospace; 
+            font-weight: bold;
+            line-height: 1;
+            padding-bottom: 2px;
+        }
+        /* TICKS (V19.14) */
+        .ruler-tick { 
+            position: absolute; bottom: 0; 
+            width: 2px; height: 8px; 
+            background: #ff0055; /* PINK TICKS */
+        }
+        .tick-25 { left: 25%; }
+        .tick-50 { left: 50%; }
+        .tick-75 { left: 75%; }
+
         .stage-container { 
-            position: relative; 
-            display: flex; 
-            justify-content: center; 
-            align-items: center; 
-            width: 100%; 
-            height: 100%; 
+            position: relative; display: flex; justify-content: center; 
+            align-items: center; width: 100%; height: 100%; overflow:hidden;
         }
         #main_canvas { 
-            max-width: 100%; 
-            max-height: 100%; 
-            width: auto; 
-            height: auto; 
-            object-fit: contain; 
-            display: block; 
-            pointer-events: none; 
+            max-width: 100%; max-height: 100%; width: auto; height: auto; 
+            object-fit: contain; display: block; pointer-events: none; 
+        }
+
+        /* COUNTDOWN TIMER */
+        #debounce-timer {
+            position: absolute; bottom: 10px; right: 10px;
+            color: #00ffcc; font-family: monospace; font-size: 1.5em; font-weight: bold;
+            background: rgba(0,0,0,0.7); padding: 5px 10px; border-radius: 4px;
+            display: none; pointer-events: none; z-index: 50;
         }
 
         /* CROP LENS */
@@ -118,29 +191,19 @@
         }
         #crop-lens:active { cursor: grabbing; border-color: #fff; }
 
-        /* CONTROLS (PIXEL 9 PRO FIXES) */
+        /* CONTROLS & LOCK */
         .editor-controls { 
-            flex: 1;                
-            max-height: 45dvh;  
-            min-height: 250px;      
-            flex-shrink: 0; 
-            background: #111; 
-            border-top: 1px solid #333; 
-            border-bottom: 2px solid red; 
-            z-index: 20; 
-            display: flex; 
-            flex-direction: column; 
-            padding: 0;
-            box-sizing: border-box;
-            padding-bottom: env(safe-area-inset-bottom);
+            flex: 1; max-height: 45dvh; min-height: 250px; flex-shrink: 0; 
+            background: #111; border-top: 1px solid #333; border-bottom: 2px solid red; 
+            z-index: 20; display: flex; flex-direction: column; padding: 0; 
+            box-sizing: border-box; padding-bottom: env(safe-area-inset-bottom); transition: 0.3s;
         }
 
-        .controls-scroll {
-            flex-grow: 1;
-            overflow-y: auto;
-            padding: 15px 0;
-            padding-bottom: 80px; 
-        }
+        /* LOCK STYLES */
+        .soft-locked { opacity: 0.8; }
+        .interface-locked { pointer-events: none; opacity: 0.5; filter: grayscale(100%); }
+
+        .controls-scroll { flex-grow: 1; overflow-y: auto; padding: 15px 0; padding-bottom: 80px; }
 
         /* ACCORDIONS */
         details { width: 100%; border-bottom: 1px solid #333; }
@@ -157,7 +220,9 @@
         .control-group { padding: 15px; background: #0d0d0d; }
 
         .control-row { display: flex; gap: 10px; margin-bottom: 12px; align-items: center; }
-        .control-row label { color: #00ffcc; font-size: 0.7em; width: 60px; flex-shrink: 0; text-transform: uppercase; letter-spacing: 1px; text-align:right; margin-right:5px;}
+        .control-row label { color: #00ffcc; font-size: 0.7em; width: 80px; flex-shrink: 0; text-transform: uppercase; letter-spacing: 1px; text-align:right; margin-right:5px;}
+        .control-row label.danger { color: #ffaa00; }
+
         input[type=range] { flex: 1; accent-color: #00ffcc; cursor: pointer; }
         
         .mini-group { display: flex; gap: 4px; flex: 1; flex-wrap: wrap; }
@@ -169,20 +234,21 @@
         }
         .mini-btn.active { background: #ff0055; color: white; border-color: #ff0055; }
         .mini-btn.disabled { border-color: #444; color: #555; cursor: not-allowed; opacity: 0.6; }
+        .mini-btn.active.danger { background: #ffaa00; border-color: #ffaa00; color: black; }
 
         .coord-val { font-size: 0.8em; color: #fff; font-weight: bold; font-family: monospace; width: 30px; text-align: center; }
-        
+        .coord-val.danger { color: #ffaa00; }
+
         /* MIXING DESK STYLES */
         .jitter-desk { display: flex; flex-direction: column; gap: 10px; }
         .jitter-col { display: flex; align-items: center; gap: 10px; }
-        .jitter-col label { width: 50px; color: #00ffcc; font-size: 0.7em; font-weight: bold; }
+        .jitter-col label { width: 60px; color: #00ffcc; font-size: 0.7em; font-weight: bold; }
         .jitter-slider { flex: 1; }
 
-        /* MEMORY UI */
         #row_index, #row_span { display: none; opacity: 0.5; transition: 0.3s; }
         #row_index.active, #row_span.active { display: flex; opacity: 1; }
 
-        /* RADICAL THEME OVERRIDES */
+        /* RADICAL THEME */
         body.radical-mode .config-label,
         body.radical-mode .control-row label,
         body.radical-mode .jitter-col label { color: #ff0055 !important; }
@@ -191,30 +257,16 @@
         body.radical-mode .mini-btn.active { background: #ff0055; color: #fff; }
         body.radical-mode details[open] summary:after { color: #ff0055; }
 
-        /* MOBILE OVERRIDE */
         @media (max-width: 600px) {
             .jitter-desk {
-                flex-direction: row; 
-                justify-content: space-around;
-                height: 180px; 
-                background: #000;
-                border: 1px solid #222;
-                border-radius: 6px;
-                padding: 15px 5px;
-                margin-bottom: 10px;
+                flex-direction: row; justify-content: space-around;
+                height: 180px; background: #000; border: 1px solid #222;
+                border-radius: 6px; padding: 15px 5px; margin-bottom: 10px;
             }
-            .jitter-col {
-                flex-direction: column; 
-                height: 100%;
-                width: 30%;
-                gap: 5px;
-            }
+            .jitter-col { flex-direction: column; height: 100%; width: 30%; gap: 5px; }
             .jitter-slider {
-                writing-mode: bt-lr; 
-                -webkit-appearance: slider-vertical; 
-                width: 40px;
-                height: 100%;
-                margin: 10px 0;
+                writing-mode: vertical-lr; direction: rtl;
+                width: 40px; height: 100%; margin: 10px 0;
             }
             .desktop-label { display: none; }
         }
@@ -222,7 +274,7 @@
         #overlay { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.92); z-index: 999; display: flex; flex-direction: column; align-items: center; justify-content: center; color:#ff0055; backdrop-filter: blur(5px); }
         .loader { border: 4px solid #333; border-top: 4px solid #ff0055; border-radius: 50%; width: 40px; height: 40px; animation: spin 1s linear infinite; margin-bottom: 15px; }
         @keyframes spin { 0% { transform: rotate(0deg); } 100% { transform: rotate(360deg); } }
-        #overlay-text { font-family: monospace; font-size: 1.2em; color: #00ffcc; }
+        #overlay-text { font-family: monospace; font-size: 1.2em; color: #00ffcc; text-align: center; padding: 20px;}
         
         .dev-section { display: flex; flex-direction: column; gap: 10px; margin-top: 40px; border-top: 1px solid #333; padding-top: 20px; text-align: left; }
         .arch-info { font-size: 0.8em; color: #666; margin-bottom: 10px; border-left: 2px solid #ff0055; padding-left: 10px;}
@@ -248,6 +300,13 @@
         .modal-item { margin-bottom: 8px; color: #ccc; font-size: 0.9em; line-height: 1.4; }
         .modal-item strong { color: #00ffcc; }
         .close-modal { text-align: center; margin-top: 20px; color: #666; font-size: 0.8em; cursor: pointer; text-decoration: underline; }
+
+        /* CONFLICT TABLE */
+        .conflict-table { width: 100%; border-collapse: collapse; margin-top: 10px; font-size: 0.75em; color: #ccc; }
+        .conflict-table th { text-align: left; color: #00ffcc; padding: 8px 5px; border-bottom: 1px solid #333; text-transform: uppercase;}
+        .conflict-table td { padding: 10px 5px; border-bottom: 1px solid #222; vertical-align: top; line-height: 1.3; }
+        .conflict-table .warn { color: #ffaa00; font-weight: bold; }
+        .conflict-table strong { color: #fff; }
 
     </style>
 </head>
@@ -278,16 +337,47 @@
                 <div class="modal-item"><em>Sure Footing:</em> A perfect, mechanical grid.</div>
                 <div class="modal-item"><em>Lost Footing:</em> The camera slips and shakes, creating organic distortion.</div>
             </div>
+
+            <div class="modal-section">
+                <div class="modal-title">SYSTEM CONFLICT MATRIX</div>
+                <table class="conflict-table">
+                    <tr><th>PAIRS</th><th>CONFLICT & SYMPTOM</th></tr>
+                    <tr>
+                        <td><span class="warn">Stitch Count</span><br>vs Span</td>
+                        <td><strong>Time Density:</strong> Asking for more stitches than fit in the time window.<br><em>Symptom:</em> Engine prioritizes Index/Span. Gap becomes 0, rendering stops early.</td>
+                    </tr>
+                    <tr>
+                        <td><span class="warn">Count</span><br>vs Width</td>
+                        <td><strong>Pixel Overflow:</strong> High count x width > 6000px.<br><em>Symptom:</em> Browser crash. (Hard Capped).</td>
+                    </tr>
+                    <tr>
+                        <td>Burst<br>vs Gap</td>
+                        <td><strong>Rhythm Collision:</strong> Burst is longer than available time.<br><em>Symptom:</em> Playback head can't advance. Gap reduced to 0.</td>
+                    </tr>
+                    <tr>
+                        <td>X-Jitter<br>vs Width</td>
+                        <td><strong>Spatial Overlap:</strong> Jitter > Width.<br><em>Symptom:</em> Shredded image, black gaps. (Allowed).</td>
+                    </tr>
+                    <tr>
+                        <td>Z-Jitter<br>vs Index</td>
+                        <td><strong>Time Boundary:</strong> Jitter grabs frame before 0.0s.<br><em>Symptom:</em> Clamped to 0.0s or Duration.</td>
+                    </tr>
+                    <tr>
+                        <td>FPS<br>vs Smear</td>
+                        <td><strong>Data Scarcity:</strong> Low FPS + High Smear.<br><em>Symptom:</em> Choppy blur.</td>
+                    </tr>
+                </table>
+            </div>
             <div class="close-modal" onclick="document.getElementById('info-modal').style.display='none'">CLOSE</div>
         </div>
     </div>
 
     <div id="screen-ingest" class="container">
-        <h1>BAALSAMIC V18.0</h1>
+        <h1>BAALSAMIC V19.14</h1>
         
         <div class="config-panel">
             <span class="config-label">Sampling Rate (FPS)</span>
-            <div class="radio-group">
+            <div class="radio-group" onchange="checkResolution()">
                 <div class="radio-option"><input type="radio" name="fps" value="15" checked><div class="radio-tile"><span>15</span></div></div>
                 <div class="radio-option"><input type="radio" name="fps" value="30"><div class="radio-tile"><span>30</span></div></div>
                 <div class="radio-option"><input type="radio" name="fps" value="60"><div class="radio-tile"><span>60</span></div></div>
@@ -306,11 +396,17 @@
             <input type="file" id="upload" accept="video/*" onchange="updateFileLabel()">
             <label for="upload" class="btn-file" id="file-label">LOAD A FILE</label>
             <div class="file-help">Compatible: .mp4, .mov, .webm</div>
-            <button class="btn-action" id="btn_stitch">GET STITCHES</button>
+            
+            <div class="lock-option">
+                <input type="checkbox" id="chk_lock" checked>
+                <label for="chk_lock">Lock interface while rendering</label>
+            </div>
+            
+            <button class="btn-action" id="btn_stitch" style="margin-top:10px;">GET STITCHES</button>
         </div>
         
         <div class="dev-section">
-            <div class="arch-info"><strong>V18.0 Architecture:</strong><br>Info Modal Added.<br>Concurrency Lock Active.<br>Smart Seek + Elastic Rhythm.<br>Organic Start (X-Jit 30).</div>
+            <div class="arch-info"><strong>V19.14 Updates:</strong><br>Ruler: Teal Text / Pink Line / Fixed Ticks.<br>Focus: Ruler reflects accurate slice time.<br>Engine: Stable Pyodide v0.24.1.</div>
             <div id="debug-panel"><h4>KERNEL LOG</h4><pre id="debug_pre">Initializing...</pre></div>
         </div>
     </div>
@@ -324,14 +420,22 @@
                 <button class="btn-radical" id="btn_radical" onclick="toggleRadicalMode()">!RAD</button>
                 <button class="btn-secondary" id="btn_reset">RESET</button>
                 <button class="btn-secondary" id="close_tuner">BACK</button>
-                <button class="btn-render-small" id="btn_render_final">RENDER</button>
+                <button class="btn-render-small" id="btn_render_final" onclick="handleRenderClick()">RENDER</button>
             </div>
         </div>
         
         <div class="lightbox-wrapper" id="lightbox_wrapper">
+            <div id="timeline-ruler">
+                <span id="ruler-start" class="ruler-label">0.0s</span>
+                <div class="ruler-tick tick-25"></div>
+                <div class="ruler-tick tick-50"></div>
+                <div class="ruler-tick tick-75"></div>
+                <span id="ruler-end" class="ruler-label">0.0s</span>
+            </div>
             <div class="stage-container" id="stage_container">
                 <canvas id="main_canvas"></canvas>
                 <div id="crop-lens"></div>
+                <div id="debounce-timer">1.5</div>
             </div>
         </div>
 
@@ -349,12 +453,12 @@
                             </div>
                         </div>
                         <div class="control-row" id="row_index">
-                            <label>INDEX</label>
+                            <label>START IDX</label>
                             <input type="range" id="input_index" min="0" max="100" value="50" oninput="updateTimeLabels()" onchange="triggerUpdate()">
                             <span id="val_idx_time" class="coord-val" style="width:50px;">0.0s</span>
                         </div>
                         <div class="control-row" id="row_span">
-                            <label>SPAN</label>
+                            <label id="lbl_span">DURATION</label>
                             <input type="range" id="input_span" min="0" max="100" value="20" oninput="updateTimeLabels()" onchange="triggerUpdate()">
                             <span id="val_span_time" class="coord-val" style="width:80px;">20% (1.5s)</span>
                         </div>
@@ -365,7 +469,7 @@
                     <summary>GEOMETRY</summary>
                     <div class="control-group">
                         <div class="control-row">
-                            <label>DEPTH</label>
+                            <label>DIRECTION</label>
                             <div class="mini-group depth-group">
                                 <button class="mini-btn active" onclick="setDepth('ltr', this)">L>R</button>
                                 <button class="mini-btn" onclick="setDepth('rtl', this)">R>L</button>
@@ -373,12 +477,12 @@
                             </div>
                         </div>
                         <div class="control-row">
-                            <label>STITCHES</label>
+                            <label>STITCH CT</label>
                             <input type="range" id="input_count" min="10" max="60" value="50" oninput="updateCoords()" onchange="triggerUpdate()">
                             <span id="val_cnt" class="coord-val">50</span>
                         </div>
                         <div class="control-row">
-                            <label>WIDTH</label>
+                            <label>WIDTH (PX)</label>
                             <input type="range" id="input_width" min="1" max="100" value="20" oninput="updateCoords()" onchange="triggerUpdate()">
                             <span id="val_wid" class="coord-val">20</span>
                         </div>
@@ -422,17 +526,17 @@
                     <div class="control-group">
                         <div class="jitter-desk">
                             <div class="jitter-col">
-                                <label>X</label>
+                                <label>X JIT</label>
                                 <input type="range" id="input_xjitter" class="jitter-slider" min="0" max="100" value="0" oninput="updateCoords()" onchange="triggerUpdate()">
                                 <span id="val_x" class="coord-val">0</span>
                             </div>
                             <div class="jitter-col">
-                                <label>Y</label>
+                                <label>Y JIT</label>
                                 <input type="range" id="input_yjitter" class="jitter-slider" min="0" max="100" value="0" oninput="updateCoords()" onchange="triggerUpdate()">
                                 <span id="val_y" class="coord-val">0</span>
                             </div>
                             <div class="jitter-col">
-                                <label>Z</label>
+                                <label>Z JIT</label>
                                 <input type="range" id="input_zjitter" class="jitter-slider" min="0" max="8" value="0" oninput="updateCoords()" onchange="triggerUpdate()">
                                 <span id="val_z" class="coord-val">0</span>
                             </div>
@@ -476,10 +580,75 @@
     window.currentBurst = 'med';
     window.currentGap = 'close';
     window.isRadical = false;
+    window.renderState = 'idle';
+    window.useLock = true; 
+    window.jobIdCounter = 0; 
 
     const RANGES = {
         organic: { count: 60, z: 8, w: 100 },
-        radical: { count: 500, z: 90, w: 200 } 
+        radical: { count: 60, z: 90, w: 100 }
+    };
+    
+    let debounceTimer = null;
+    let countdownInterval = null;
+    const DEBOUNCE_DELAY = 1500; 
+
+    window.handleRenderClick = function() {
+        if (window.renderState === 'idle') {
+            window.saveImage();
+        } else if (window.renderState === 'waiting') {
+            cancelUpdate();
+        }
+    };
+
+    window.saveImage = function() {
+        const canvas = document.getElementById("main_canvas");
+        const lens = document.getElementById("crop-lens");
+        const scale = canvas.width / canvas.clientWidth; 
+        
+        let sourceX = 0;
+        let sourceW = canvas.width;
+        let sourceH = canvas.height;
+        
+        if (window.currentRatio !== 'max') {
+            const stage = document.getElementById('stage_container');
+            const visW = canvas.clientWidth;
+            const stageW = stage.clientWidth;
+            const canvasOffset = (stageW - visW) / 2; 
+            const lensLeft = parseFloat(lens.style.left || 0);
+            const lensWidth = parseFloat(lens.style.width || 0);
+            const relativeLensX = lensLeft - canvasOffset;
+            sourceX = relativeLensX * scale;
+            sourceW = lensWidth * scale;
+        }
+        
+        const temp = document.createElement('canvas');
+        temp.width = sourceW; temp.height = sourceH;
+        const ctx = temp.getContext('2d');
+        ctx.fillStyle = "black"; 
+        ctx.fillRect(0, 0, temp.width, temp.height);
+        ctx.drawImage(canvas, sourceX, 0, sourceW, sourceH, 0, 0, sourceW, sourceH);
+        
+        const count = document.getElementById("input_count").value;
+        const width = document.getElementById("input_width").value;
+        const burst = window.currentBurst;
+        const gap = window.currentGap;
+        const anchor = window.currentAnchor;
+        const jitX = document.getElementById("input_xjitter").value;
+        const jitY = document.getElementById("input_yjitter").value;
+        const jitZ = document.getElementById("input_zjitter").value;
+        
+        const fps = document.querySelector('input[name="fps"]:checked').value;
+        const res = document.querySelector('input[name="res"]:checked').value;
+        const resLabel = (res == 0) ? "4K" : (res == 1080) ? "1080p" : "SD";
+        
+        const filename = `BAAL_${window.sourceFilename}_v19.14_${resLabel}-${fps}_${count}x${width}_J${jitX}-${jitY}-${jitZ}_b${burst}-g${gap}_${anchor}.png`;
+
+        const link = document.createElement('a');
+        link.download = filename;
+        link.href = temp.toDataURL();
+        link.click();
+        alert("Done! Saved.");
     };
 
     function updateFileLabel() {
@@ -497,6 +666,7 @@
         const warn = document.getElementById('res-warning');
         if (val === "0") warn.style.display = "block";
         else warn.style.display = "none";
+        updateCoords(); 
     }
 
     function toggleRadicalMode() {
@@ -536,61 +706,126 @@
         document.getElementById('val_y').innerText = document.getElementById('input_yjitter').value;
         document.getElementById('val_z').innerText = document.getElementById('input_zjitter').value;
 
-        // PIXEL COUNTER LOGIC
         const smear = window.currentSmear;
-        const totalW = (parseInt(c) * parseInt(w) * smear);
+        const estW = (parseInt(c) * parseInt(w) * smear);
         const display = document.getElementById('pixel_count');
-        display.innerText = totalW + "px";
-        if (totalW > 15000) display.classList.add('danger');
-        else display.classList.remove('danger');
+        display.innerText = "~" + estW + "px";
+        if (estW > 3200) {
+            display.classList.add('danger');
+            display.style.color = "";
+        } else {
+            display.classList.remove('danger');
+            display.style.color = "#00ffcc";
+        }
         
+        const fps = document.querySelector('input[name="fps"]:checked').value;
+        const smearBtns = document.querySelectorAll('.smear-group .mini-btn');
+        smearBtns.forEach(b => b.classList.remove('danger'));
+        if(fps == "15" && window.currentSmear == 3) {
+            if(smearBtns[2]) smearBtns[2].classList.add('danger');
+        }
+
         updateTimeLabels();
     }
     
     function updateTimeLabels() {
         const vid = document.getElementById('hidden_video');
         const dur = vid.duration || 0;
-        
-        // Update Index Timestamp
         const idxVal = document.getElementById('input_index').value;
         const timeVal = (idxVal / 100) * dur;
         document.getElementById('val_idx_time').innerText = timeVal.toFixed(1) + "s";
         
-        // Update Span Percentage & Time
         const spanVal = document.getElementById('input_span').value;
         const spanSec = 1.0 + (spanVal / 100.0) * (dur - 1.0);
         document.getElementById('val_span_time').innerText = spanVal + "% (" + spanSec.toFixed(1) + "s)";
+        
+        const count = parseInt(document.getElementById('input_count').value);
+        let burstFrames = 1;
+        if(window.currentBurst === 'med') burstFrames = 3;
+        if(window.currentBurst === 'hard') burstFrames = 10;
+        const frameDur = 0.033 * window.currentSmear;
+        
+        const totalNeeded = (count * burstFrames * frameDur);
+        const lblSpan = document.getElementById('lbl_span');
+        const valSpan = document.getElementById('val_span_time');
+        
+        if (totalNeeded > spanSec) {
+            lblSpan.classList.add('danger');
+            valSpan.classList.add('danger');
+        } else {
+            lblSpan.classList.remove('danger');
+            valSpan.classList.remove('danger');
+        }
+
+        // V19.14: RULER LOGIC (REPLICATING PYTHON CLAMP)
+        const rulerStart = document.getElementById('ruler-start');
+        const rulerEnd = document.getElementById('ruler-end');
+        
+        if (window.currentAnchor === 'fit') {
+            rulerStart.innerText = "0.0s";
+            rulerEnd.innerText = dur.toFixed(1) + "s";
+        } else {
+            // Replicate Python Focus Logic
+            const center = dur * (idxVal / 100.0);
+            const halfSpan = spanSec / 2.0;
+            let start = center - halfSpan;
+            let end = center + halfSpan;
+            
+            if (start < 0) {
+                const diff = 0 - start;
+                start = 0;
+                end += diff;
+            }
+            if (end > dur) {
+                const diff = end - dur;
+                end = dur;
+                start -= diff;
+                if (start < 0) start = 0;
+            }
+            
+            rulerStart.innerText = start.toFixed(1) + "s";
+            rulerEnd.innerText = end.toFixed(1) + "s";
+        }
     }
     
     function calculateGoldenStart() {
         const screenW = window.innerWidth;
-        const targetW = Math.floor(screenW * 0.8);
+        const targetW = Math.floor(screenW * 0.95); 
+        let count = 40;
+        let stitchW = Math.ceil(targetW / count); 
+        if (stitchW < 1) stitchW = 1;
         
-        // MOBILE OPTIMIZATION
-        let stitchW = 40; 
-        let count = Math.floor(targetW / stitchW);
-        
-        if (screenW < 600 && count < 14) {
-            count = 14;
-            // Recalculate width to fit 14 stitches
-            stitchW = Math.floor(targetW / 14);
-            if(stitchW < 1) stitchW = 1;
-        }
-        
-        if (count > RANGES.organic.count) count = RANGES.organic.count; 
-
         document.getElementById('input_count').value = count;
         document.getElementById('input_width').value = stitchW;
-        document.getElementById('input_xjitter').value = 30; // ORGANIC START
+        document.getElementById('input_xjitter').value = 30;
         document.getElementById('input_yjitter').value = 0;
         document.getElementById('input_zjitter').value = 0;
         
-        setSmear(1, document.querySelector('.smear-group .mini-btn')); 
-        setDepth('ltr', document.querySelector('.depth-group .mini-btn'));
-        setAnchor('fit', document.querySelector('.anchor-group .mini-btn'));
-        setBurst('med', document.querySelector('.burst-group .mini-btn'));
-        setGap('close', document.querySelector('.gap-group .mini-btn'));
+        window.currentSmear = 1;
+        window.currentDepth = 'ltr';
+        window.currentAnchor = 'fit';
+        window.currentBurst = 'med';
+        window.currentGap = 'close';
+        window.isRadical = false; 
         
+        const smearBtns = document.querySelectorAll('.smear-group .mini-btn');
+        if(smearBtns.length > 0) setSmear(1, smearBtns[0]); 
+
+        const depthBtns = document.querySelectorAll('.depth-group .mini-btn');
+        if(depthBtns.length > 0) setDepth('ltr', depthBtns[0]); 
+
+        const anchorBtns = document.querySelectorAll('.anchor-group .mini-btn');
+        if(anchorBtns.length > 0) setAnchor('fit', anchorBtns[0]); 
+
+        const burstBtns = document.querySelectorAll('.burst-group .mini-btn');
+        if(burstBtns.length > 1) setBurst('med', burstBtns[1]); 
+
+        const gapBtns = document.querySelectorAll('.gap-group .mini-btn');
+        if(gapBtns.length > 0) setGap('close', gapBtns[0]); 
+        
+        document.getElementById('btn_radical').classList.remove('active');
+        document.body.classList.remove('radical-mode');
+
         updateCoords();
     }
 
@@ -625,18 +860,15 @@
         window.currentAnchor = val;
         document.querySelector('.anchor-group').querySelectorAll('.mini-btn').forEach(b => b.classList.remove('active'));
         if(btn) btn.classList.add('active');
-        
         const rowIndex = document.getElementById('row_index');
         const rowSpan = document.getElementById('row_span');
-        
-        if (val === 'focus') {
-            rowIndex.classList.add('active');
-            rowSpan.classList.add('active');
-        } else {
-            rowIndex.classList.remove('active');
-            rowSpan.classList.remove('active');
+        if (val === 'focus') { 
+            rowIndex.classList.add('active'); rowSpan.classList.add('active'); 
+        } else { 
+            rowIndex.classList.remove('active'); rowSpan.classList.remove('active'); 
+            triggerUpdate(); 
         }
-        triggerUpdate();
+        updateTimeLabels(); // Force ruler update immediately on click
     }
 
     function setBurst(val, btn) {
@@ -656,6 +888,19 @@
     function updateLensDimensions() {
         const canvas = document.getElementById('main_canvas');
         const lens = document.getElementById('crop-lens');
+        const ruler = document.getElementById('timeline-ruler');
+        
+        if (!canvas) return;
+        
+        ruler.style.width = canvas.clientWidth + "px";
+        const vid = document.getElementById('hidden_video');
+        if(vid && vid.duration) {
+            // Default to fit mode display on initial load/resize if needed
+            if(window.currentAnchor === 'fit') {
+               document.getElementById('ruler-end').innerText = vid.duration.toFixed(1) + "s";
+            }
+        }
+
         if (window.currentRatio === 'max') { lens.style.display = 'none'; return; }
         lens.style.display = 'block';
 
@@ -706,63 +951,119 @@
     let isDragging = false;
     let startX = 0; let startLeft = 0;
 
-    function startDrag(e) { 
-        if(window.currentRatio === 'max') return; 
-        isDragging = true; 
-        startX = (e.touches ? e.touches[0].clientX : e.clientX); 
-        startLeft = parseFloat(lens.style.left) || 0; 
-        lens.style.cursor = 'grabbing'; 
-    }
-
-    function doDrag(e) { 
-        if(!isDragging) return; 
-        e.preventDefault(); 
-        const clientX = (e.touches ? e.touches[0].clientX : e.clientX); 
-        const delta = clientX - startX; 
-        
-        const canvas = document.getElementById('main_canvas');
-        const stage = document.getElementById('stage_container');
-        const visW = canvas.clientWidth;
-        const stageW = stage.clientWidth;
-        const canvasOffset = (stageW - visW) / 2;
-        
-        const minX = canvasOffset;
-        const maxX = minX + (visW - parseFloat(lens.style.width));
-        
-        let newLeft = startLeft + delta;
-        if(newLeft < minX) newLeft = minX;
-        if(newLeft > maxX) newLeft = maxX;
-        
-        lens.style.left = newLeft + "px"; 
-        
-        const range = maxX - minX;
-        if(range > 0) {
-            const pct = ((newLeft - minX) / range) * 100;
-            document.getElementById('input_pos').value = pct;
-        }
-    }
-
+    function startDrag(e) { if(window.currentRatio === 'max') return; isDragging = true; startX = (e.touches ? e.touches[0].clientX : e.clientX); startLeft = parseFloat(lens.style.left) || 0; lens.style.cursor = 'grabbing'; }
+    function doDrag(e) { if(!isDragging) return; e.preventDefault(); const clientX = (e.touches ? e.touches[0].clientX : e.clientX); const delta = clientX - startX; const canvas = document.getElementById('main_canvas'); const stage = document.getElementById('stage_container'); const visW = canvas.clientWidth; const stageW = stage.clientWidth; const canvasOffset = (stageW - visW) / 2; const minX = canvasOffset; const maxX = minX + (visW - parseFloat(lens.style.width)); let newLeft = startLeft + delta; if(newLeft < minX) newLeft = minX; if(newLeft > maxX) newLeft = maxX; lens.style.left = newLeft + "px"; const range = maxX - minX; if(range > 0) { const pct = ((newLeft - minX) / range) * 100; document.getElementById('input_pos').value = pct; } }
     function stopDrag() { isDragging = false; lens.style.cursor = 'grab'; }
-    
     lens.addEventListener('mousedown', startDrag); lens.addEventListener('touchstart', startDrag);
     window.addEventListener('mousemove', doDrag); window.addEventListener('touchmove', doDrag, {passive: false});
     window.addEventListener('mouseup', stopDrag); window.addEventListener('touchend', stopDrag);
 
+    // --- SMART WAIT, SOFT LOCK & JOB ID ---
     function triggerUpdate() { 
-        // OPTIONAL: Set cursor to wait immediately on UI thread
-        document.body.style.cursor = 'wait';
-        window.call_py("await update_preview()"); 
+        if (debounceTimer) clearTimeout(debounceTimer);
+        if (countdownInterval) clearInterval(countdownInterval);
+
+        window.renderState = 'waiting';
+        window.useLock = document.getElementById('chk_lock').checked;
+        window.jobIdCounter++; 
+        
+        const btn = document.getElementById('btn_render_final');
+        const controls = document.querySelector('.editor-controls');
+        
+        if(window.useLock) {
+            controls.classList.add('soft-locked');
+        }
+        
+        btn.classList.add('waiting');
+        btn.classList.remove('processing');
+        
+        let timeLeft = DEBOUNCE_DELAY / 1000;
+        btn.innerText = `WAITING... ${timeLeft.toFixed(1)}s`;
+
+        const timerDisplay = document.getElementById('debounce-timer');
+        timerDisplay.style.display = 'block';
+        timerDisplay.innerText = timeLeft.toFixed(1);
+
+        countdownInterval = setInterval(() => {
+            timeLeft -= 0.1;
+            if (timeLeft <= 0) {
+                timeLeft = 0;
+                clearInterval(countdownInterval);
+                timerDisplay.style.display = 'none';
+            }
+            if(window.renderState === 'waiting') {
+                btn.innerText = `WAITING... ${timeLeft.toFixed(1)}s`;
+                timerDisplay.innerText = timeLeft.toFixed(1);
+            }
+        }, 100);
+
+        debounceTimer = setTimeout(() => {
+            startProcessingState();
+            window.call_py(`await update_preview(${window.jobIdCounter})`); 
+        }, DEBOUNCE_DELAY);
+    }
+
+    function cancelUpdate() {
+        if (debounceTimer) clearTimeout(debounceTimer);
+        if (countdownInterval) clearInterval(countdownInterval);
+        
+        window.renderState = 'idle';
+        window.jobIdCounter++; // Kill pending jobs
+        
+        const btn = document.getElementById('btn_render_final');
+        const controls = document.querySelector('.editor-controls');
+        
+        controls.classList.remove('soft-locked');
+        btn.classList.remove('waiting');
+        btn.innerText = "RENDER";
+        document.getElementById('debounce-timer').style.display = 'none';
+    }
+
+    function startProcessingState() {
+        window.renderState = 'processing';
+        const btn = document.getElementById('btn_render_final');
+        btn.classList.remove('waiting');
+        btn.classList.add('processing');
+        btn.innerText = "WEAVING...";
+        
+        if(window.useLock) {
+            document.querySelector('.editor-controls').classList.add('interface-locked');
+            document.body.style.cursor = 'wait';
+        }
     }
     
+    window.unlockInterface = function(finishedJobId) {
+        if(finishedJobId && finishedJobId != window.jobIdCounter) {
+            return; 
+        }
+        
+        const controls = document.querySelector('.editor-controls');
+        controls.classList.remove('interface-locked');
+        controls.classList.remove('soft-locked');
+        document.body.style.cursor = 'default';
+        const btn = document.getElementById('btn_render_final');
+        btn.classList.remove('processing');
+        btn.innerText = "RENDER";
+        window.renderState = 'idle';
+    };
+
     window.addEventListener('resize', () => { setTimeout(updateLensDimensions, 100); });
     function dbg(msg){ console.log(msg); const pre = document.getElementById("debug_pre"); if(pre) { pre.textContent = (pre.textContent + "\n> " + msg).slice(-5000); const panel = document.getElementById("debug-panel"); if(panel) panel.scrollTop = panel.scrollHeight; } const ov = document.getElementById("overlay"); if(ov && ov.style.display !== "none") { document.getElementById("overlay-text").innerText = msg.toUpperCase(); } }
 
-    const PYODIDE_BASE = "https://cdn.jsdelivr.net/pyodide/v0.23.2/full/";
+    const PYODIDE_BASE = "https://cdn.jsdelivr.net/pyodide/v0.24.1/full/";
     (function(){
         dbg("Downloading Pyodide Engine...");
         const s = document.createElement("script");
         s.src = PYODIDE_BASE + "pyodide.js";
+        
+        const bootTimer = setTimeout(() => {
+            const ov = document.getElementById("overlay-text");
+            ov.innerText = "CONNECTION TIMEOUT.\nCHECK FIREWALL OR RELOAD.";
+            ov.style.color = "red";
+        }, 15000);
+
         s.onload = async () => {
+            clearTimeout(bootTimer);
             dbg("Initializing WASM...");
             try {
                 window.pyodide = await loadPyodide({indexURL: PYODIDE_BASE});
@@ -770,6 +1071,7 @@
                 await initializePython();
             } catch(e){ dbg("INIT ERROR: " + e); }
         };
+        s.onerror = () => { dbg("FAILED TO LOAD PYTHON ENGINE."); };
         document.head.appendChild(s);
     })();
 
@@ -791,60 +1093,10 @@
 
         document.getElementById("btn_reset").onclick = async () => {
             window.calculateGoldenStart();
-            window.triggerUpdate();
+            window.triggerUpdate(); 
             dbg("System Reset to Golden State");
         };
         
-        document.getElementById("btn_render_final").onclick = async () => {
-            document.getElementById("overlay").style.display = "flex";
-            
-            const canvas = document.getElementById("main_canvas");
-            const lens = document.getElementById("crop-lens");
-            const scale = canvas.width / canvas.clientWidth; 
-            
-            let sourceX = 0;
-            let sourceW = canvas.width;
-            let sourceH = canvas.height;
-            
-            if (window.currentRatio !== 'max') {
-                const stage = document.getElementById('stage_container');
-                const visW = canvas.clientWidth;
-                const stageW = stage.clientWidth;
-                const canvasOffset = (stageW - visW) / 2; 
-                const lensLeft = parseFloat(lens.style.left || 0);
-                const lensWidth = parseFloat(lens.style.width || 0);
-                const relativeLensX = lensLeft - canvasOffset;
-                
-                sourceX = relativeLensX * scale;
-                sourceW = lensWidth * scale;
-            }
-            
-            const temp = document.createElement('canvas');
-            temp.width = sourceW; temp.height = sourceH;
-            const ctx = temp.getContext('2d');
-            
-            ctx.fillStyle = "black"; 
-            ctx.fillRect(0, 0, temp.width, temp.height);
-            ctx.drawImage(canvas, sourceX, 0, sourceW, sourceH, 0, 0, sourceW, sourceH);
-            
-            const count = document.getElementById("input_count").value;
-            const width = document.getElementById("input_width").value;
-            const smear = window.currentSmear;
-            const depth = window.currentDepth;
-            const anchor = window.currentAnchor;
-            const burst = window.currentBurst;
-            const gap = window.currentGap;
-            
-            const filename = `BAAL_${window.sourceFilename}_v18.0_${anchor}_b-${burst}_g-${gap}_c${count}_w${width}.png`;
-
-            const link = document.createElement('a');
-            link.download = filename;
-            link.href = temp.toDataURL();
-            link.click();
-            document.getElementById("overlay").style.display = "none";
-            alert("Done! Saved.");
-        };
-
         document.getElementById("overlay").style.display = "none";
         dbg("System Ready. Waiting for file.");
     }
@@ -854,13 +1106,11 @@
 from js import document, console, localStorage, JSON, window, setTimeout
 import asyncio, random, math
 
-# --- RENDER GENERATION LOCK ---
 render_generation = 0
 
 async def await_seek(video_elem, target_time):
     video_elem.currentTime = target_time
-    await asyncio.sleep(0.04) 
-    
+    await asyncio.sleep(0.08) 
     timeout = 20
     while video_elem.seeking and timeout > 0:
         await asyncio.sleep(0.05)
@@ -915,25 +1165,22 @@ async def ingest_video(*args):
     
     global current_seed
     current_seed = random.randint(100, 999)
-    await update_preview()
+    await update_preview(0)
     window.setRatio('max') 
     document.getElementById("overlay").style.display = "none"
 
-async def update_preview(*args):
+# V19.12: Accepts my_job_id to track races
+async def update_preview(my_job_id):
     global render_generation
     render_generation += 1
     my_gen = render_generation
 
-    # GEOMETRY
     count = int(document.getElementById("input_count").value)
     width = int(document.getElementById("input_width").value)
-    
-    # ENTROPY
     x_jit = int(document.getElementById("input_xjitter").value)
     y_jit = int(document.getElementById("input_yjitter").value)
     z_jit = int(document.getElementById("input_zjitter").value)
     
-    # MEMORY PARAMS
     anchor_mode = window.currentAnchor
     index_pct = int(document.getElementById("input_index").value) / 100.0
     
@@ -950,18 +1197,24 @@ async def update_preview(*args):
     smear = window.currentSmear
     depth = window.currentDepth
     
-    await run_process(video, count, width, smear, depth, anchor_mode, index_pct, span_sec, burst_mode, gap_mode, x_jit, y_jit, z_jit, res, "main_canvas", fps, my_gen)
+    res_label = "4K" if res == 0 else str(res) + "p"
+    window.dbg(f"ENGINE: {res_label} | {fps}fps | Duration: {round(duration,1)}s")
+
+    await run_process(video, count, width, smear, depth, anchor_mode, index_pct, span_sec, burst_mode, gap_mode, x_jit, y_jit, z_jit, res, "main_canvas", fps, my_gen, my_job_id)
     
     window.updateLensDimensions()
+    
+    await asyncio.sleep(0.5)
+    # Pass ID back to unlock
+    window.unlockInterface(my_job_id)
 
-async def run_process(video_elem, target_count, base_width, smear_val, depth_mode, anchor_mode, index_pct, span_sec, burst_mode, gap_mode, x_jitter, y_jitter, z_jitter, target_height, canvas_id, target_fps, my_gen):
+async def run_process(video_elem, target_count, base_width, smear_val, depth_mode, anchor_mode, index_pct, span_sec, burst_mode, gap_mode, x_jitter, y_jitter, z_jitter, target_height, canvas_id, target_fps, my_gen, my_job_id):
     canvas = document.getElementById("hidden_canvas")
     ctx = canvas.getContext("2d")
     out_canvas = document.getElementById(canvas_id)
     out_ctx = out_canvas.getContext("2d")
     out_ctx.imageSmoothingEnabled = False
     
-    # CANVAS SETUP
     scale = 1.0
     if target_height > 0 and video_elem.videoHeight > target_height:
         scale = target_height / video_elem.videoHeight
@@ -970,7 +1223,6 @@ async def run_process(video_elem, target_count, base_width, smear_val, depth_mod
     h = int(video_elem.videoHeight * scale)
     canvas.width = w; canvas.height = h
 
-    # TIME CALCULATIONS
     duration = video_elem.duration
     start_time = 0.0
     end_time = duration
@@ -995,56 +1247,65 @@ async def run_process(video_elem, target_count, base_width, smear_val, depth_mod
 
     available_time = end_time - start_time
     
-    # ELASTIC RHYTHM LOGIC
     burst_map = generate_burst_map(target_count, burst_mode)
     total_burst_frames = sum(burst_map)
     frame_dur = 0.033 * smear_val
     total_burst_time = total_burst_frames * frame_dur
     remaining_time = available_time - total_burst_time
+    
     gap_time = 0
-    if remaining_time > 0 and target_count > 1:
+    if target_count > 1:
         gap_time = remaining_time / (target_count - 1)
         
-    # PREPARE CANVAS
-    est_width = target_count * base_width * smear_val + (target_count * int(x_jitter * scale))
+    if gap_time < 0:
+        gap_time = 0
+        
+    jitter_buffer = (target_count * int(x_jitter * scale)) + 500
+    est_width = (target_count * base_width * smear_val) + jitter_buffer
+    
     out_canvas.width = est_width
     out_canvas.height = h
     out_ctx.clearRect(0, 0, est_width, h)
     
-    # JITTERS
     curr_x_int = int(x_jitter * scale)
     curr_y_int = int(y_jitter * scale)
     x_vals = generate_jitter_bag(target_count + 10, curr_x_int)
     y_vals = generate_jitter_bag(target_count + 10, curr_y_int)
     
-    # THE LOOP
     current_time = start_time
     x_pos = 0
     
     for i in range(target_count):
-        # CONCURRENCY CHECK
         global render_generation
         if render_generation != my_gen:
             return 
-
-        if current_time > duration: break
         
-        # UI FEEDBACK
+        # V19.12: Check if JS has moved on to a new job ID
+        if my_job_id != window.jobIdCounter:
+            return
+
+        seek_time = current_time
+        
+        if seek_time > end_time and anchor_mode == 'focus':
+             break
+
+        if seek_time > duration - 0.1: 
+            seek_time = duration - 0.1
+        if seek_time < 0:
+            seek_time = 0
+        
         msg = f"{i}/{target_count}"
         try:
-            document.getElementById('overlay-text').innerText = f"SCANNING {msg}..."
-            document.getElementById('btn_render_final').innerText = f"{msg}"
+            document.getElementById('btn_render_final').innerText = f"WEAVING {msg}"
         except: pass
         
-        # BURST EXECUTION
         my_burst_count = burst_map[i]
         for b in range(my_burst_count):
-             await await_seek(video_elem, current_time)
+             await await_seek(video_elem, seek_time)
              try: ctx.drawImage(video_elem, 0, 0, w, h)
              except: break
-             current_time += frame_dur
+             seek_time += frame_dur 
         
-        # DRAW LOGIC
         y_off = 0; x_var = 0
         if i < len(y_vals):
             y_off = y_vals[i]; x_var = x_vals[i]
@@ -1085,22 +1346,27 @@ async def run_process(video_elem, target_count, base_width, smear_val, depth_mod
             except: pass
             out_ctx.restore()
         
-        # ADVANCE CANVAS & TIME
         x_pos += this_slit
-        current_time += gap_time
+        current_time += gap_time + (my_burst_count * frame_dur)
 
-    # FINALIZE
-    if render_generation == my_gen:
+    if render_generation == my_gen and my_job_id == window.jobIdCounter:
         document.getElementById('btn_render_final').innerText = "RENDER"
-        document.body.style.cursor = 'default'
-
-    # TRIM & SEAL
+        
     final_width = int(x_pos)
     if final_width > 0 and final_width < est_width:
         pixel_data = out_ctx.getImageData(0, 0, final_width, h)
         out_canvas.width = final_width
         out_ctx.putImageData(pixel_data, 0, 0)
         est_width = final_width 
+    
+    display = document.getElementById('pixel_count')
+    display.innerText = f"{final_width}px"
+    if final_width > 3200:
+        display.classList.add('danger')
+        display.style.color = ""
+    else:
+        display.classList.remove('danger')
+        display.style.color = "#00ffcc"
 
     out_ctx.globalCompositeOperation = "destination-over"
     out_ctx.fillStyle = "black"
@@ -1109,3 +1375,4 @@ async def run_process(video_elem, target_count, base_width, smear_val, depth_mod
     </script>
 </body>
 </html>
+// END OF DOCUMENT [20251220-2215]
