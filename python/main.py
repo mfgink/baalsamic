@@ -1,57 +1,81 @@
 import os
-from flask import Flask, send_from_directory, jsonify
+import shutil
+from flask import Flask, send_from_directory, jsonify, request
+from werkzeug.utils import secure_filename
 
-# Define paths to the frontend folders (since they are one level up from this script)
-# We use os.path.abspath to ensure Windows paths work correctly
+# Import the new Engine module
+import engine
+
+# CONFIGURATION
 BASE_DIR = os.path.abspath(os.path.join(os.path.dirname(__file__), '..'))
-STATIC_DIR = os.path.join(BASE_DIR, 'css')  # CSS folder
-JS_DIR = os.path.join(BASE_DIR, 'js')       # JS folder
+STATIC_DIR = os.path.join(BASE_DIR, 'css')
+JS_DIR = os.path.join(BASE_DIR, 'js')
+UPLOAD_FOLDER = os.path.join(BASE_DIR, 'uploads')
 
-# Initialize Flask
-# static_folder is explicitly set to where our CSS lives to avoid confusion
+# Ensure upload directory exists
+os.makedirs(UPLOAD_FOLDER, exist_ok=True)
+
 app = Flask(__name__, static_folder=STATIC_DIR)
+app.config['UPLOAD_FOLDER'] = UPLOAD_FOLDER
+app.config['MAX_CONTENT_LENGTH'] = 500 * 1024 * 1024  # Limit uploads to 500MB
 
-# 1. Route for the Homepage
+# --- ROUTES ---
+
 @app.route('/')
 def index():
-    """
-    Serves the index.html file from the project root.
-    """
     try:
-        # We manually read and return the HTML file since it's in the root, not 'templates'
         with open(os.path.join(BASE_DIR, 'index.html'), 'r', encoding='utf-8') as f:
             return f.read()
     except FileNotFoundError:
         return "Error: index.html not found in project root."
 
-# 2. Route for CSS (Explicitly serving from ../css)
 @app.route('/css/<path:filename>')
 def serve_css(filename):
     return send_from_directory(STATIC_DIR, filename)
 
-# 3. Route for JS (Explicitly serving from ../js)
 @app.route('/js/<path:filename>')
 def serve_js(filename):
     return send_from_directory(JS_DIR, filename)
 
-# 4. API Endpoint (The "Backend Logic")
-@app.route('/api/status')
-def api_status():
+# --- API: INGEST ---
+@app.route('/api/upload', methods=['POST'])
+def upload_file():
     """
-    This is where your JavaScript will eventually talk to Python.
-    Returns a JSON object confirming the backend is reachable.
+    Receives the video, saves it, and IMMEDIATELY analyzes it.
     """
-    return jsonify({
-        "system": "Baalsamic v20",
-        "status": "Online",
-        "backend": "Flask Connected"
-    })
+    if 'video' not in request.files:
+        return jsonify({"error": "No file part"}), 400
+    
+    file = request.files['video']
+    
+    if file.filename == '':
+        return jsonify({"error": "No selected file"}), 400
+        
+    if file:
+        filename = secure_filename(file.filename)
+        save_path = os.path.join(app.config['UPLOAD_FOLDER'], filename)
+        
+        # 1. Save to disk
+        file.save(save_path)
+        print(f"--- INGEST: Received {filename} ---")
+        
+        # 2. Call the Engine to get Metadata
+        metadata = engine.get_video_metadata(save_path)
+        
+        if "error" in metadata:
+            return jsonify(metadata), 500
+
+        # 3. Return everything to the UI
+        return jsonify({
+            "status": "success",
+            "filename": filename,
+            "path": save_path,
+            "metadata": metadata
+        })
 
 if __name__ == '__main__':
-    print("--- Starting Baalsamic v20 Server ---")
-    print(f"Project Root: {BASE_DIR}")
-    print("Go to: http://127.0.0.1:5000")
-    # debug=True allows the server to auto-reload when you save code changes
-    app.run(debug=True, port=5000)
+    print("--- Baalsamic v20 Server (Flask) ---")
+    print(f"Storage: {UPLOAD_FOLDER}")
+    app.run(debug=True, port=5000, host='0.0.0.0')
 
-# END OF DOCUMENT [251221-0921]
+# END OF DOCUMENT [20251221-1632]

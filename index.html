@@ -1,34 +1,223 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Baalsamic v20.0 (Refactor)</title>
-    
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,user-scalable=no" />
+    <title>Baalsamic V20.0</title>
     <link rel="stylesheet" href="css/styles.css">
 </head>
 <body>
-    <header>
-        <div class="container">
-            <h1>Baalsamic v20</h1>
-            <p>System Status: <span id="system-status">Initializing...</span></p>
-        </div>
-    </header>
 
-    <main class="container">
-        <section id="dashboard">
-            <h2>Dashboard</h2>
-				<p>Welcome to the refactored interface. If the header is blue, CSS is connected. If the status above says "Ready", JS is connected.</p>            
-            <div class="card">
-                <h3>Quick Actions</h3>
-                <button id="test-btn" class="btn-primary">Test Interaction</button>
+    <div id="overlay"><div class="loader"></div><div id="overlay-text">BOOTING SYSTEM...</div></div>
+
+    <div id="info-modal" onclick="document.getElementById('info-modal').style.display='none'">
+        <div class="modal-content" onclick="event.stopPropagation()">
+            <div class="modal-section">
+                <div class="modal-title">THE MEMORY (Timeline)</div>
+                <div class="modal-item"><strong>Index:</strong> The starting point in the video.</div>
+                <div class="modal-item"><strong>Span:</strong> The total amount of time you want to capture.</div>
             </div>
-        </section>
-    </main>
+            <div class="close-modal" onclick="document.getElementById('info-modal').style.display='none'">CLOSE</div>
+        </div>
+    </div>
 
-    <footer>
-        <p>Baalsamic v20 | Legacy Build: v19.14 (Archived)</p>
-    </footer>
+    <div id="screen-ingest" class="container">
+        <h1>BAALSAMIC V20.0</h1>
+        
+        <div class="config-panel">
+            <span class="config-label">Sampling Rate (FPS)</span>
+            <div class="radio-group" onchange="checkResolution()">
+                <div class="radio-option"><input type="radio" name="fps" value="15" checked><div class="radio-tile"><span>15</span></div></div>
+                <div class="radio-option"><input type="radio" name="fps" value="30"><div class="radio-tile"><span>30</span></div></div>
+                <div class="radio-option"><input type="radio" name="fps" value="60"><div class="radio-tile"><span>60</span></div></div>
+            </div>
+
+            <span class="config-label">Resolution</span>
+            <div class="radio-group" onchange="checkResolution()">
+                <div class="radio-option"><input type="radio" name="res" value="720" checked><div class="radio-tile"><span>SD</span></div></div>
+                <div class="radio-option"><input type="radio" name="res" value="1080"><div class="radio-tile"><span>HD</span></div></div>
+                <div class="radio-option"><input type="radio" name="res" value="0"><div class="radio-tile"><span>4K</span></div></div>
+            </div>
+            <div id="res-warning" class="warning-text">⚠ High resolutions may cause slowness or crashes with high stitch counts.</div>
+        </div>
+
+        <div class="upload-container">
+            <input type="file" id="upload" accept="video/*" onchange="updateFileLabel()">
+            <label for="upload" class="btn-file" id="file-label">LOAD A FILE</label>
+            <div class="file-help">Compatible: .mp4, .mov, .webm</div>
+            
+            <div class="lock-option">
+                <input type="checkbox" id="chk_lock" checked>
+                <label for="chk_lock">Lock interface while rendering</label>
+            </div>
+            
+            <button class="btn-action" id="btn_stitch" style="margin-top:10px;">GET STITCHES</button>
+        </div>
+        
+        <div class="dev-section">
+            <div class="arch-info"><strong>V20 Refactor:</strong><br>Architecture: Flask / HTML5 / Native Python.<br>Status: Porting UI from V19.14.</div>
+            <div id="debug-panel"><h4>KERNEL LOG</h4><pre id="debug_pre">Initializing V20 Interface...</pre></div>
+        </div>
+    </div>
+
+    <div id="screen-time-travel">
+        <div class="tuner-header">
+            <h2>TIME TRAVEL</h2>
+            <div class="header-buttons">
+                <span id="pixel_count" class="pixel-display">0px</span>
+                <button class="btn-info" onclick="document.getElementById('info-modal').style.display='flex'">i</button>
+                <button class="btn-radical" id="btn_radical" onclick="toggleRadicalMode()">!RAD</button>
+                <button class="btn-secondary" id="btn_reset">RESET</button>
+                <button class="btn-secondary" id="close_tuner">BACK</button>
+                <button class="btn-render-small" id="btn_render_final" onclick="handleRenderClick()">RENDER</button>
+            </div>
+        </div>
+        
+        <div class="lightbox-wrapper" id="lightbox_wrapper">
+            <div id="timeline-ruler">
+                <span id="ruler-start" class="ruler-label">0.0s</span>
+                <div class="ruler-tick tick-25"></div>
+                <div class="ruler-tick tick-50"></div>
+                <div class="ruler-tick tick-75"></div>
+                <span id="ruler-end" class="ruler-label">0.0s</span>
+            </div>
+            <div class="stage-container" id="stage_container">
+                <canvas id="main_canvas"></canvas>
+                <div id="crop-lens"></div>
+                <div id="debounce-timer">1.5</div>
+            </div>
+        </div>
+
+        <div class="editor-controls">
+            <div class="controls-scroll">
+                
+                <details open>
+                    <summary>MEMORY</summary>
+                    <div class="control-group">
+                        <div class="control-row">
+                            <label>MODE</label>
+                            <div class="mini-group anchor-group">
+                                <button class="mini-btn active" onclick="setAnchor('fit', this)">FIT</button>
+                                <button class="mini-btn" onclick="setAnchor('focus', this)">FOCUS</button>
+                            </div>
+                        </div>
+                        <div class="control-row" id="row_index">
+                            <label>START IDX</label>
+                            <input type="range" id="input_index" min="0" max="100" value="50" oninput="updateTimeLabels()" onchange="triggerUpdate()">
+                            <span id="val_idx_time" class="coord-val" style="width:50px;">0.0s</span>
+                        </div>
+                        <div class="control-row" id="row_span">
+                            <label id="lbl_span">DURATION</label>
+                            <input type="range" id="input_span" min="0" max="100" value="20" oninput="updateTimeLabels()" onchange="triggerUpdate()">
+                            <span id="val_span_time" class="coord-val" style="width:80px;">20% (1.5s)</span>
+                        </div>
+                    </div>
+                </details>
+
+                <details open>
+                    <summary>GEOMETRY</summary>
+                    <div class="control-group">
+                        <div class="control-row">
+                            <label>DIRECTION</label>
+                            <div class="mini-group depth-group">
+                                <button class="mini-btn active" onclick="setDepth('ltr', this)">L>R</button>
+                                <button class="mini-btn" onclick="setDepth('rtl', this)">R>L</button>
+                                <button class="mini-btn" onclick="setDepth('mix', this)">MIX</button>
+                            </div>
+                        </div>
+                        <div class="control-row">
+                            <label>STITCH CT</label>
+                            <input type="range" id="input_count" min="10" max="60" value="50" oninput="updateCoords()" onchange="triggerUpdate()">
+                            <span id="val_cnt" class="coord-val">50</span>
+                        </div>
+                        <div class="control-row">
+                            <label>WIDTH (PX)</label>
+                            <input type="range" id="input_width" min="1" max="100" value="20" oninput="updateCoords()" onchange="triggerUpdate()">
+                            <span id="val_wid" class="coord-val">20</span>
+                        </div>
+                    </div>
+                </details>
+
+                <details>
+                    <summary>RHYTHM</summary>
+                    <div class="control-group">
+                        <div class="control-row">
+                            <label>SMEAR</label>
+                            <div class="mini-group smear-group">
+                                <button class="mini-btn active" onclick="setSmear(1, this)">1x</button>
+                                <button class="mini-btn" onclick="setSmear(2, this)">2x</button>
+                                <button class="mini-btn" onclick="setSmear(3, this)">3x</button>
+                            </div>
+                        </div>
+                        <div class="control-row">
+                            <label>BURST</label>
+                            <div class="mini-group burst-group">
+                                <button class="mini-btn" onclick="setBurst('soft', this)">SOFT</button>
+                                <button class="mini-btn active" onclick="setBurst('med', this)">MID</button>
+                                <button class="mini-btn" onclick="setBurst('hard', this)">HARD</button>
+                                <button class="mini-btn" onclick="setBurst('mix', this)">MIX</button>
+                            </div>
+                        </div>
+                        <div class="control-row">
+                            <label>GAP</label>
+                            <div class="mini-group gap-group">
+                                <button class="mini-btn active" onclick="setGap('close', this)">CLOSE</button>
+                                <button class="mini-btn" onclick="setGap('med', this)">MID</button>
+                                <button class="mini-btn" onclick="setGap('far', this)">FAR</button>
+                                <button class="mini-btn" onclick="setGap('mix', this)">MIX</button>
+                            </div>
+                        </div>
+                    </div>
+                </details>
+
+                <details>
+                    <summary>JITTERS</summary>
+                    <div class="control-group">
+                        <div class="jitter-desk">
+                            <div class="jitter-col">
+                                <label>X JIT</label>
+                                <input type="range" id="input_xjitter" class="jitter-slider" min="0" max="100" value="0" oninput="updateCoords()" onchange="triggerUpdate()">
+                                <span id="val_x" class="coord-val">0</span>
+                            </div>
+                            <div class="jitter-col">
+                                <label>Y JIT</label>
+                                <input type="range" id="input_yjitter" class="jitter-slider" min="0" max="100" value="0" oninput="updateCoords()" onchange="triggerUpdate()">
+                                <span id="val_y" class="coord-val">0</span>
+                            </div>
+                            <div class="jitter-col">
+                                <label>Z JIT</label>
+                                <input type="range" id="input_zjitter" class="jitter-slider" min="0" max="8" value="0" oninput="updateCoords()" onchange="triggerUpdate()">
+                                <span id="val_z" class="coord-val">0</span>
+                            </div>
+                        </div>
+                    </div>
+                </details>
+
+                <details>
+                    <summary>CROP</summary>
+                    <div class="control-group">
+                        <div class="control-row">
+                            <label>RATIO</label>
+                            <div class="mini-group ratio-mini-group">
+                                <button class="mini-btn active" onclick="setRatio('max')">MAX</button>
+                                <button class="mini-btn" onclick="setRatio('1:1')">1:1</button>
+                                <button class="mini-btn" onclick="setRatio('4:5')">4:5</button>
+                                <button class="mini-btn" onclick="setRatio('16:9')">16:9</button>
+                            </div>
+                        </div>
+                        <div class="control-row" id="row_pos">
+                            <label>POS</label>
+                            <input type="range" id="input_pos" min="0" max="100" value="50" oninput="updateLensPositionFromSlider()">
+                        </div>
+                    </div>
+                </details>
+
+            </div>
+        </div>
+    </div>
+
+    <video id="hidden_video" muted playsinline></video>
+    <canvas id="hidden_canvas"></canvas>
 
     <script src="js/main.js"></script>
 </body>
