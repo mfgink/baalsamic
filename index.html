@@ -3,7 +3,7 @@
 <head>
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,user-scalable=no" />
-    <title>Baalsamic V20.0</title>
+    <title>Baalsamic V20.9</title>
     <link rel="stylesheet" href="css/styles.css">
 </head>
 <body>
@@ -17,12 +17,55 @@
                 <div class="modal-item"><strong>Index:</strong> The starting point in the video.</div>
                 <div class="modal-item"><strong>Span:</strong> The total amount of time you want to capture.</div>
             </div>
+            <div class="modal-section">
+                <div class="modal-title">THE GEOMETRY (Space)</div>
+                <div class="modal-item"><strong>Stitches:</strong> How many slices to cut. (More = smoother image).</div>
+                <div class="modal-item"><strong>Width:</strong> How thick each slice is. (Wider = more content visible).</div>
+            </div>
+            <div class="modal-section">
+                <div class="modal-title">THE RHYTHM (Time)</div>
+                <div class="modal-item"><strong>Burst ("The Open Eye"):</strong> How long the camera records <em>during</em> a stitch.</div>
+                <div class="modal-item"><strong>Gap ("The Blink"):</strong> How much time disappears <em>between</em> stitches.</div>
+            </div>
+            <div class="modal-section">
+                <div class="modal-title">THE ENTROPY (Chaos)</div>
+                <div class="modal-item"><strong>Jitter ("The Footing"):</strong> How stable the camera's grip is on the timeline.</div>
+                <div class="modal-item"><em>Sure Footing:</em> A perfect, mechanical grid.</div>
+                <div class="modal-item"><em>Lost Footing:</em> The camera slips and shakes, creating organic distortion.</div>
+            </div>
+
+            <div class="modal-section">
+                <div class="modal-title">SYSTEM CONFLICT MATRIX</div>
+                <table class="conflict-table">
+                    <tr><th>PAIRS</th><th>CONFLICT & SYMPTOM</th></tr>
+                    <tr>
+                        <td><span class="warn">Stitch Count</span><br>vs Span</td>
+                        <td><strong>Time Density:</strong> Asking for more stitches than fit in the time window.<br><em>Symptom:</em> Engine prioritizes Index/Span. Gap becomes 0, rendering stops early.</td>
+                    </tr>
+                    <tr>
+                        <td><span class="warn">Count</span><br>vs Width</td>
+                        <td><strong>Pixel Overflow:</strong> High count x width > 6000px.<br><em>Symptom:</em> Browser crash. (Hard Capped).</td>
+                    </tr>
+                    <tr>
+                        <td>Burst<br>vs Gap</td>
+                        <td><strong>Rhythm Collision:</strong> Burst is longer than available time.<br><em>Symptom:</em> Playback head can't advance. Gap reduced to 0.</td>
+                    </tr>
+                    <tr>
+                        <td>X-Jitter<br>vs Width</td>
+                        <td><strong>Spatial Overlap:</strong> Jitter > Width.<br><em>Symptom:</em> Shredded image, black gaps. (Allowed).</td>
+                    </tr>
+                    <tr>
+                        <td>Z-Jitter<br>vs Index</td>
+                        <td><strong>Time Boundary:</strong> Jitter grabs frame before 0.0s.<br><em>Symptom:</em> Clamped to 0.0s or Duration.</td>
+                    </tr>
+                </table>
+            </div>
             <div class="close-modal" onclick="document.getElementById('info-modal').style.display='none'">CLOSE</div>
         </div>
     </div>
 
     <div id="screen-ingest" class="container">
-        <h1>BAALSAMIC V20.0</h1>
+        <h1>BAALSAMIC V20.9</h1>
         
         <div class="config-panel">
             <span class="config-label">Sampling Rate (FPS)</span>
@@ -42,7 +85,7 @@
         </div>
 
         <div class="upload-container">
-            <input type="file" id="upload" accept="video/*" onchange="updateFileLabel()">
+            <input type="file" id="upload" accept="video/*">
             <label for="upload" class="btn-file" id="file-label">LOAD A FILE</label>
             <div class="file-help">Compatible: .mp4, .mov, .webm</div>
             
@@ -55,8 +98,8 @@
         </div>
         
         <div class="dev-section">
-            <div class="arch-info"><strong>V20 Refactor:</strong><br>Architecture: Flask / HTML5 / Native Python.<br>Status: Porting UI from V19.14.</div>
-            <div id="debug-panel"><h4>KERNEL LOG</h4><pre id="debug_pre">Initializing V20 Interface...</pre></div>
+            <div class="arch-info"><strong>V20.9 Release:</strong><br>Hotfix: Render Button Restored.<br>UI: Ruler Visuals Updated.<br>Backlog: Smear V2.</div>
+            <div id="debug-panel"><h4>KERNEL LOG</h4><pre id="debug_pre">Initializing V20.9 Interface...</pre></div>
         </div>
     </div>
 
@@ -74,14 +117,15 @@
         </div>
         
         <div class="lightbox-wrapper" id="lightbox_wrapper">
-            <div id="timeline-ruler">
-                <span id="ruler-start" class="ruler-label">0.0s</span>
-                <div class="ruler-tick tick-25"></div>
-                <div class="ruler-tick tick-50"></div>
-                <div class="ruler-tick tick-75"></div>
-                <span id="ruler-end" class="ruler-label">0.0s</span>
-            </div>
             <div class="stage-container" id="stage_container">
+                <div id="timeline-ruler">
+                    <span id="ruler-start" class="ruler-label">0.0s</span>
+                    <div class="ruler-tick tick-25"></div>
+                    <div class="ruler-tick tick-50"></div>
+                    <div class="ruler-tick tick-75"></div>
+                    <span id="ruler-end" class="ruler-label">0.0s</span>
+                </div>
+                
                 <canvas id="main_canvas"></canvas>
                 <div id="crop-lens"></div>
                 <div id="debounce-timer">1.5</div>
@@ -102,12 +146,12 @@
                             </div>
                         </div>
                         <div class="control-row" id="row_index">
-                            <label>START IDX</label>
+                            <label>INDEX</label> 
                             <input type="range" id="input_index" min="0" max="100" value="50" oninput="updateTimeLabels()" onchange="triggerUpdate()">
                             <span id="val_idx_time" class="coord-val" style="width:50px;">0.0s</span>
                         </div>
                         <div class="control-row" id="row_span">
-                            <label id="lbl_span">DURATION</label>
+                            <label id="lbl_span">SPAN</label>
                             <input type="range" id="input_span" min="0" max="100" value="20" oninput="updateTimeLabels()" onchange="triggerUpdate()">
                             <span id="val_span_time" class="coord-val" style="width:80px;">20% (1.5s)</span>
                         </div>
@@ -118,22 +162,21 @@
                     <summary>GEOMETRY</summary>
                     <div class="control-group">
                         <div class="control-row">
-                            <label>DIRECTION</label>
-                            <div class="mini-group depth-group">
-                                <button class="mini-btn active" onclick="setDepth('ltr', this)">L>R</button>
-                                <button class="mini-btn" onclick="setDepth('rtl', this)">R>L</button>
-                                <button class="mini-btn" onclick="setDepth('mix', this)">MIX</button>
-                            </div>
-                        </div>
-                        <div class="control-row">
-                            <label>STITCH CT</label>
+                            <label id="lbl_count">STITCH CT</label>
                             <input type="range" id="input_count" min="10" max="60" value="50" oninput="updateCoords()" onchange="triggerUpdate()">
                             <span id="val_cnt" class="coord-val">50</span>
                         </div>
-                        <div class="control-row">
-                            <label>WIDTH (PX)</label>
+                        
+                        <div class="control-row" id="row_stitch_width">
+                            <label>STITCH PX</label> 
                             <input type="range" id="input_width" min="1" max="100" value="20" oninput="updateCoords()" onchange="triggerUpdate()">
                             <span id="val_wid" class="coord-val">20</span>
+                        </div>
+
+                        <div class="control-row" id="row_image_width" style="display:none;">
+                            <label>IMAGE PX</label> 
+                            <input type="range" id="input_image_width" min="100" max="3800" value="1200" oninput="updateCoords()" onchange="triggerUpdate()">
+                            <span id="val_img_wid" class="coord-val" style="width:50px;">1200</span>
                         </div>
                     </div>
                 </details>
@@ -141,14 +184,6 @@
                 <details>
                     <summary>RHYTHM</summary>
                     <div class="control-group">
-                        <div class="control-row">
-                            <label>SMEAR</label>
-                            <div class="mini-group smear-group">
-                                <button class="mini-btn active" onclick="setSmear(1, this)">1x</button>
-                                <button class="mini-btn" onclick="setSmear(2, this)">2x</button>
-                                <button class="mini-btn" onclick="setSmear(3, this)">3x</button>
-                            </div>
-                        </div>
                         <div class="control-row">
                             <label>BURST</label>
                             <div class="mini-group burst-group">
@@ -188,6 +223,15 @@
                                 <label>Z JIT</label>
                                 <input type="range" id="input_zjitter" class="jitter-slider" min="0" max="8" value="0" oninput="updateCoords()" onchange="triggerUpdate()">
                                 <span id="val_z" class="coord-val">0</span>
+                            </div>
+                        </div>
+                        
+                        <div class="control-row" id="row_direction" style="display:none; margin-top: 10px;">
+                            <label>OVERLAP</label>
+                            <div class="mini-group depth-group">
+                                <button class="mini-btn active" onclick="setDepth('ltr', this)">L>R</button>
+                                <button class="mini-btn" onclick="setDepth('rtl', this)">R>L</button>
+                                <button class="mini-btn" onclick="setDepth('mix', this)">MIX</button>
                             </div>
                         </div>
                     </div>

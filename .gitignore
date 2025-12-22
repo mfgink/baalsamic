@@ -1,17 +1,11 @@
-# Windows system files
-Thumbs.db
-Desktop.ini
-$RECYCLE.BIN/
+# Ignore Uploads and Output Images
+uploads/
+*.jpg
+*.png
+*.mp4
 
-# Python (Crucial for your python/ folder)
+# Ignore Python System Files
 __pycache__/
-*.pyc
-*.pyo
-*.pyd
-.Python
-env/
+*.py[cod]
 venv/
-
-# Web & Logs
-*.log
-.DS_Store
+.env
