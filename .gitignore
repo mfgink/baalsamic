@@ -1,11 +1,20 @@
-# Ignore Uploads and Output Images
+# --- V21 DATA STORES ---
+# Ignore the generated buffers and uploads
 uploads/
+maps/
+
+# Ignore Media Types (Double safety)
 *.jpg
 *.png
 *.mp4
+*.json
 
-# Ignore Python System Files
+# --- PYTHON SYSTEM ---
 __pycache__/
 *.py[cod]
 venv/
 .env
+
+# --- OS TRASH ---
+.DS_Store
+Thumbs.db

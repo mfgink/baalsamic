@@ -3,266 +3,216 @@
 <head>
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,user-scalable=no" />
-    <title>Baalsamic V20.9</title>
+    <title>Baalsamic V21: Failure Engine</title>
     <link rel="stylesheet" href="css/styles.css">
 </head>
 <body>
 
-    <div id="overlay"><div class="loader"></div><div id="overlay-text">BOOTING SYSTEM...</div></div>
+    <div id="overlay"><div class="loader"></div><div id="overlay-text">BOOTING V21 KERNEL...</div></div>
 
-    <div id="info-modal" onclick="document.getElementById('info-modal').style.display='none'">
-        <div class="modal-content" onclick="event.stopPropagation()">
-            <div class="modal-section">
-                <div class="modal-title">THE MEMORY (Timeline)</div>
-                <div class="modal-item"><strong>Index:</strong> The starting point in the video.</div>
-                <div class="modal-item"><strong>Span:</strong> The total amount of time you want to capture.</div>
-            </div>
-            <div class="modal-section">
-                <div class="modal-title">THE GEOMETRY (Space)</div>
-                <div class="modal-item"><strong>Stitches:</strong> How many slices to cut. (More = smoother image).</div>
-                <div class="modal-item"><strong>Width:</strong> How thick each slice is. (Wider = more content visible).</div>
-            </div>
-            <div class="modal-section">
-                <div class="modal-title">THE RHYTHM (Time)</div>
-                <div class="modal-item"><strong>Burst ("The Open Eye"):</strong> How long the camera records <em>during</em> a stitch.</div>
-                <div class="modal-item"><strong>Gap ("The Blink"):</strong> How much time disappears <em>between</em> stitches.</div>
-            </div>
-            <div class="modal-section">
-                <div class="modal-title">THE ENTROPY (Chaos)</div>
-                <div class="modal-item"><strong>Jitter ("The Footing"):</strong> How stable the camera's grip is on the timeline.</div>
-                <div class="modal-item"><em>Sure Footing:</em> A perfect, mechanical grid.</div>
-                <div class="modal-item"><em>Lost Footing:</em> The camera slips and shakes, creating organic distortion.</div>
-            </div>
+    <div id="info-modal" class="modal-backdrop" style="display:none;">
+        <div class="modal-content">
+            <div class="modal-title">SYSTEM MEMO</div>
+            <div id="modal-body-content"></div>
+            <div class="close-modal" onclick="UI.closeModal()">CLOSE</div>
+        </div>
+    </div>
 
-            <div class="modal-section">
-                <div class="modal-title">SYSTEM CONFLICT MATRIX</div>
-                <table class="conflict-table">
-                    <tr><th>PAIRS</th><th>CONFLICT & SYMPTOM</th></tr>
-                    <tr>
-                        <td><span class="warn">Stitch Count</span><br>vs Span</td>
-                        <td><strong>Time Density:</strong> Asking for more stitches than fit in the time window.<br><em>Symptom:</em> Engine prioritizes Index/Span. Gap becomes 0, rendering stops early.</td>
-                    </tr>
-                    <tr>
-                        <td><span class="warn">Count</span><br>vs Width</td>
-                        <td><strong>Pixel Overflow:</strong> High count x width > 6000px.<br><em>Symptom:</em> Browser crash. (Hard Capped).</td>
-                    </tr>
-                    <tr>
-                        <td>Burst<br>vs Gap</td>
-                        <td><strong>Rhythm Collision:</strong> Burst is longer than available time.<br><em>Symptom:</em> Playback head can't advance. Gap reduced to 0.</td>
-                    </tr>
-                    <tr>
-                        <td>X-Jitter<br>vs Width</td>
-                        <td><strong>Spatial Overlap:</strong> Jitter > Width.<br><em>Symptom:</em> Shredded image, black gaps. (Allowed).</td>
-                    </tr>
-                    <tr>
-                        <td>Z-Jitter<br>vs Index</td>
-                        <td><strong>Time Boundary:</strong> Jitter grabs frame before 0.0s.<br><em>Symptom:</em> Clamped to 0.0s or Duration.</td>
-                    </tr>
-                </table>
+    <div id="develop-modal" class="modal-backdrop" style="display:none;">
+        <div class="modal-content">
+            <div class="modal-title">DEVELOP MEMORY</div>
+            <div class="modal-item">Proceed to the Darkroom to apply physical failures?</div>
+            <div class="modal-actions">
+                <button class="btn-secondary" onclick="Workflow.exportRawStrip()">EXPORT RAW (PNG)</button>
+                <button class="btn-action" onclick="Workflow.goToDarkroom()">DEVELOP & FIX</button>
             </div>
-            <div class="close-modal" onclick="document.getElementById('info-modal').style.display='none'">CLOSE</div>
+            <div class="close-modal" onclick="document.getElementById('develop-modal').style.display='none'">CANCEL</div>
         </div>
     </div>
 
     <div id="screen-ingest" class="container">
-        <h1>BAALSAMIC V20.9</h1>
+        <h1>BAALSAMIC V21</h1>
         
         <div class="config-panel">
             <span class="config-label">Sampling Rate (FPS)</span>
-            <div class="radio-group" onchange="checkResolution()">
+            <div class="radio-group">
                 <div class="radio-option"><input type="radio" name="fps" value="15" checked><div class="radio-tile"><span>15</span></div></div>
                 <div class="radio-option"><input type="radio" name="fps" value="30"><div class="radio-tile"><span>30</span></div></div>
                 <div class="radio-option"><input type="radio" name="fps" value="60"><div class="radio-tile"><span>60</span></div></div>
             </div>
 
-            <span class="config-label">Resolution</span>
-            <div class="radio-group" onchange="checkResolution()">
+            <span class="config-label">Output Mode</span>
+            <div class="radio-group">
                 <div class="radio-option"><input type="radio" name="res" value="720" checked><div class="radio-tile"><span>SD</span></div></div>
                 <div class="radio-option"><input type="radio" name="res" value="1080"><div class="radio-tile"><span>HD</span></div></div>
                 <div class="radio-option"><input type="radio" name="res" value="0"><div class="radio-tile"><span>4K</span></div></div>
             </div>
-            <div id="res-warning" class="warning-text">⚠ High resolutions may cause slowness or crashes with high stitch counts.</div>
         </div>
 
         <div class="upload-container">
             <input type="file" id="upload" accept="video/*">
-            <label for="upload" class="btn-file" id="file-label">LOAD A FILE</label>
+            <label for="upload" class="btn-file" id="file-label">LOAD VIDEO SOURCE</label>
             <div class="file-help">Compatible: .mp4, .mov, .webm</div>
-            
-            <div class="lock-option">
-                <input type="checkbox" id="chk_lock" checked>
-                <label for="chk_lock">Lock interface while rendering</label>
-            </div>
-            
-            <button class="btn-action" id="btn_stitch" style="margin-top:10px;">GET STITCHES</button>
+            <button class="btn-action" id="btn_ingest" disabled>INITIALIZE ENGINE</button>
         </div>
         
         <div class="dev-section">
-            <div class="arch-info"><strong>V20.9 Release:</strong><br>Hotfix: Render Button Restored.<br>UI: Ruler Visuals Updated.<br>Backlog: Smear V2.</div>
-            <div id="debug-panel"><h4>KERNEL LOG</h4><pre id="debug_pre">Initializing V20.9 Interface...</pre></div>
+            <div class="arch-info"><strong>V21.0 Alpha:</strong><br>Architecture: Modular (Cartographer/Artist).<br>New: Static Buffer & Map I/O.</div>
         </div>
     </div>
 
-    <div id="screen-time-travel">
+    <div id="screen-time-travel" style="display:none;">
         <div class="tuner-header">
             <h2>TIME TRAVEL</h2>
             <div class="header-buttons">
                 <span id="pixel_count" class="pixel-display">0px</span>
-                <button class="btn-info" onclick="document.getElementById('info-modal').style.display='flex'">i</button>
-                <button class="btn-radical" id="btn_radical" onclick="toggleRadicalMode()">!RAD</button>
-                <button class="btn-secondary" id="btn_reset">RESET</button>
-                <button class="btn-secondary" id="close_tuner">BACK</button>
-                <button class="btn-render-small" id="btn_render_final" onclick="handleRenderClick()">RENDER</button>
+                <button class="btn-secondary" onclick="Workflow.resetParams()">RESET</button>
+                <button class="btn-secondary" onclick="Workflow.goToIngest()">BACK</button>
+                <button class="btn-render-small" id="btn_develop" onclick="Workflow.openDevelopModal()">DEVELOP</button>
             </div>
         </div>
         
-        <div class="lightbox-wrapper" id="lightbox_wrapper">
+        <div class="lightbox-wrapper">
             <div class="stage-container" id="stage_container">
-                <div id="timeline-ruler">
-                    <span id="ruler-start" class="ruler-label">0.0s</span>
-                    <div class="ruler-tick tick-25"></div>
-                    <div class="ruler-tick tick-50"></div>
-                    <div class="ruler-tick tick-75"></div>
-                    <span id="ruler-end" class="ruler-label">0.0s</span>
-                </div>
-                
-                <canvas id="main_canvas"></canvas>
-                <div id="crop-lens"></div>
-                <div id="debounce-timer">1.5</div>
+                <img id="preview_img" src="" style="display:none; max-height:100%; max-width:100%; box-shadow: 0 0 20px #000;" />
+                <div id="debounce-timer" style="display:none;">WAIT</div>
             </div>
         </div>
 
         <div class="editor-controls">
             <div class="controls-scroll">
-                
                 <details open>
-                    <summary>MEMORY</summary>
+                    <summary>GEOMETRY (THE CUT)</summary>
                     <div class="control-group">
                         <div class="control-row">
-                            <label>MODE</label>
-                            <div class="mini-group anchor-group">
-                                <button class="mini-btn active" onclick="setAnchor('fit', this)">FIT</button>
-                                <button class="mini-btn" onclick="setAnchor('focus', this)">FOCUS</button>
-                            </div>
-                        </div>
-                        <div class="control-row" id="row_index">
-                            <label>INDEX</label> 
-                            <input type="range" id="input_index" min="0" max="100" value="50" oninput="updateTimeLabels()" onchange="triggerUpdate()">
-                            <span id="val_idx_time" class="coord-val" style="width:50px;">0.0s</span>
-                        </div>
-                        <div class="control-row" id="row_span">
-                            <label id="lbl_span">SPAN</label>
-                            <input type="range" id="input_span" min="0" max="100" value="20" oninput="updateTimeLabels()" onchange="triggerUpdate()">
-                            <span id="val_span_time" class="coord-val" style="width:80px;">20% (1.5s)</span>
-                        </div>
-                    </div>
-                </details>
-
-                <details open>
-                    <summary>GEOMETRY</summary>
-                    <div class="control-group">
-                        <div class="control-row">
-                            <label id="lbl_count">STITCH CT</label>
-                            <input type="range" id="input_count" min="10" max="60" value="50" oninput="updateCoords()" onchange="triggerUpdate()">
+                            <label>STITCH CT</label>
+                            <input type="range" id="input_count" min="10" max="60" value="50" oninput="Workflow.updateCoords()">
                             <span id="val_cnt" class="coord-val">50</span>
                         </div>
-                        
-                        <div class="control-row" id="row_stitch_width">
-                            <label>STITCH PX</label> 
-                            <input type="range" id="input_width" min="1" max="100" value="20" oninput="updateCoords()" onchange="triggerUpdate()">
+                        <div class="control-row">
+                            <label>WIDTH PX</label> 
+                            <input type="range" id="input_width" min="1" max="100" value="20" oninput="Workflow.updateCoords()">
                             <span id="val_wid" class="coord-val">20</span>
-                        </div>
-
-                        <div class="control-row" id="row_image_width" style="display:none;">
-                            <label>IMAGE PX</label> 
-                            <input type="range" id="input_image_width" min="100" max="3800" value="1200" oninput="updateCoords()" onchange="triggerUpdate()">
-                            <span id="val_img_wid" class="coord-val" style="width:50px;">1200</span>
                         </div>
                     </div>
                 </details>
 
+                <details open>
+                    <summary>MEMORY (THE TIME)</summary>
+                    <div class="control-group">
+                        <div class="control-row">
+                            <label>INDEX</label> 
+                            <input type="range" id="input_index" min="0" max="100" value="50" oninput="Workflow.updateCoords()">
+                            <span id="val_idx" class="coord-val">50%</span>
+                        </div>
+                        <div class="control-row">
+                            <label>SPAN</label>
+                            <input type="range" id="input_span" min="0" max="100" value="20" oninput="Workflow.updateCoords()">
+                            <span id="val_span" class="coord-val">20%</span>
+                        </div>
+                    </div>
+                </details>
+                
                 <details>
-                    <summary>RHYTHM</summary>
+                    <summary>ENTROPY (THE CHAOS)</summary>
                     <div class="control-group">
                         <div class="control-row">
                             <label>BURST</label>
-                            <div class="mini-group burst-group">
-                                <button class="mini-btn" onclick="setBurst('soft', this)">SOFT</button>
-                                <button class="mini-btn active" onclick="setBurst('med', this)">MID</button>
-                                <button class="mini-btn" onclick="setBurst('hard', this)">HARD</button>
-                                <button class="mini-btn" onclick="setBurst('mix', this)">MIX</button>
+                            <div class="mini-group" id="grp_burst">
+                                <button class="mini-btn" data-val="soft" onclick="Workflow.setParam('burst', 'soft')">SOFT</button>
+                                <button class="mini-btn active" data-val="med" onclick="Workflow.setParam('burst', 'med')">MED</button>
+                                <button class="mini-btn" data-val="hard" onclick="Workflow.setParam('burst', 'hard')">HARD</button>
                             </div>
                         </div>
                         <div class="control-row">
                             <label>GAP</label>
-                            <div class="mini-group gap-group">
-                                <button class="mini-btn active" onclick="setGap('close', this)">CLOSE</button>
-                                <button class="mini-btn" onclick="setGap('med', this)">MID</button>
-                                <button class="mini-btn" onclick="setGap('far', this)">FAR</button>
-                                <button class="mini-btn" onclick="setGap('mix', this)">MIX</button>
+                            <div class="mini-group" id="grp_gap">
+                                <button class="mini-btn active" data-val="close" onclick="Workflow.setParam('gap', 'close')">CLOSE</button>
+                                <button class="mini-btn" data-val="far" onclick="Workflow.setParam('gap', 'far')">FAR</button>
                             </div>
                         </div>
-                    </div>
-                </details>
-
-                <details>
-                    <summary>JITTERS</summary>
-                    <div class="control-group">
                         <div class="jitter-desk">
                             <div class="jitter-col">
                                 <label>X JIT</label>
-                                <input type="range" id="input_xjitter" class="jitter-slider" min="0" max="100" value="0" oninput="updateCoords()" onchange="triggerUpdate()">
-                                <span id="val_x" class="coord-val">0</span>
+                                <input type="range" id="input_xjitter" min="0" max="100" value="0" oninput="Workflow.updateCoords()">
                             </div>
                             <div class="jitter-col">
                                 <label>Y JIT</label>
-                                <input type="range" id="input_yjitter" class="jitter-slider" min="0" max="100" value="0" oninput="updateCoords()" onchange="triggerUpdate()">
-                                <span id="val_y" class="coord-val">0</span>
+                                <input type="range" id="input_yjitter" min="0" max="100" value="0" oninput="Workflow.updateCoords()">
                             </div>
                             <div class="jitter-col">
-                                <label>Z JIT</label>
-                                <input type="range" id="input_zjitter" class="jitter-slider" min="0" max="8" value="0" oninput="updateCoords()" onchange="triggerUpdate()">
-                                <span id="val_z" class="coord-val">0</span>
-                            </div>
-                        </div>
-                        
-                        <div class="control-row" id="row_direction" style="display:none; margin-top: 10px;">
-                            <label>OVERLAP</label>
-                            <div class="mini-group depth-group">
-                                <button class="mini-btn active" onclick="setDepth('ltr', this)">L>R</button>
-                                <button class="mini-btn" onclick="setDepth('rtl', this)">R>L</button>
-                                <button class="mini-btn" onclick="setDepth('mix', this)">MIX</button>
+                                <label>Z ROT</label>
+                                <input type="range" id="input_zjitter" min="0" max="45" value="0" oninput="Workflow.updateCoords()">
                             </div>
                         </div>
                     </div>
                 </details>
-
-                <details>
-                    <summary>CROP</summary>
-                    <div class="control-group">
-                        <div class="control-row">
-                            <label>RATIO</label>
-                            <div class="mini-group ratio-mini-group">
-                                <button class="mini-btn active" onclick="setRatio('max')">MAX</button>
-                                <button class="mini-btn" onclick="setRatio('1:1')">1:1</button>
-                                <button class="mini-btn" onclick="setRatio('4:5')">4:5</button>
-                                <button class="mini-btn" onclick="setRatio('16:9')">16:9</button>
-                            </div>
-                        </div>
-                        <div class="control-row" id="row_pos">
-                            <label>POS</label>
-                            <input type="range" id="input_pos" min="0" max="100" value="50" oninput="updateLensPositionFromSlider()">
-                        </div>
-                    </div>
-                </details>
-
             </div>
         </div>
     </div>
 
-    <video id="hidden_video" muted playsinline></video>
-    <canvas id="hidden_canvas"></canvas>
+    <div id="screen-darkroom" style="display:none;">
+        <div class="tuner-header">
+            <h2>DARKROOM</h2>
+            <div class="header-buttons">
+                <button class="btn-secondary" onclick="Workflow.saveRecipe()">SAVE RECIPE</button>
+                <button class="btn-secondary" onclick="Workflow.backToTimeTravel()">BACK</button>
+                <button class="btn-render-small processing" id="btn_print" onclick="Workflow.exportPrint()">PRINT</button>
+            </div>
+        </div>
 
+        <div class="lightbox-wrapper" style="background: #111;">
+            <div class="stage-container">
+                <canvas id="darkroom_canvas"></canvas>
+            </div>
+        </div>
+
+        <div class="editor-controls darkroom-controls">
+            <div class="controls-scroll">
+                
+                <details open>
+                    <summary>PHYSICS (THE NEGATIVE)</summary>
+                    <div class="control-group">
+                        <div class="control-row">
+                            <label>SLIP</label>
+                            <input type="range" id="dk_slip" min="0" max="100" value="0" oninput="Artist.update()">
+                            <span class="coord-val">OFF</span>
+                        </div>
+                        <div class="control-row">
+                            <label>TEMP</label>
+                            <input type="range" id="dk_temp" min="0" max="100" value="0" oninput="Artist.update()">
+                            <span class="coord-val">COOL</span>
+                        </div>
+                        <div class="control-row">
+                            <label>LINK</label>
+                            <div class="mini-group" id="grp_link">
+                                <button class="mini-btn active" onclick="Artist.setMode('link', 'sync')">SYNC</button>
+                                <button class="mini-btn" onclick="Artist.setMode('link', 'break')">BREAK</button>
+                            </div>
+                        </div>
+                    </div>
+                </details>
+
+                <details>
+                    <summary>FINISH (THE PRINT)</summary>
+                    <div class="control-group">
+                        <div class="control-row">
+                            <label>MOOD</label>
+                             <input type="range" id="dk_mood" min="-100" max="100" value="0" oninput="Artist.update()">
+                        </div>
+                        <div class="control-row">
+                            <label>GLOSS</label>
+                            <input type="range" id="dk_gloss" min="0" max="100" value="0" oninput="Artist.update()">
+                        </div>
+                    </div>
+                </details>
+                
+            </div>
+        </div>
+    </div>
+
+    <script src="js/engine/artist.js"></script>
+    <script src="js/ui/workflow.js"></script>
     <script src="js/main.js"></script>
 </body>
 </html>
