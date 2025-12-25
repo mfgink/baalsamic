@@ -4,17 +4,27 @@
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,user-scalable=no" />
     <title>Baalsamic V21: Failure Engine</title>
-    <link rel="stylesheet" href="css/styles.css">
+    <link rel="stylesheet" href="css/styles.css?v=21.17">
 </head>
 <body>
 
-    <div id="overlay"><div class="loader"></div><div id="overlay-text">BOOTING V21 KERNEL...</div></div>
-
-    <div id="info-modal" class="modal-backdrop" style="display:none;">
-        <div class="modal-content">
+    <div id="info-modal" class="modal-backdrop" style="display:none;" onclick="document.getElementById('info-modal').style.display='none'">
+        <div class="modal-content" onclick="event.stopPropagation()">
             <div class="modal-title">SYSTEM MEMO</div>
-            <div id="modal-body-content"></div>
-            <div class="close-modal" onclick="UI.closeModal()">CLOSE</div>
+            <div style="text-align:left; font-size: 0.8em; line-height: 1.4em;">
+                <p><strong>THE MEMORY (Timeline)</strong><br>
+                Index: Center point of time.<br>
+                Span: Duration of the capture.</p>
+                <br>
+                <p><strong>THE GEOMETRY (Space)</strong><br>
+                Stitches: Number of slices.<br>
+                Width: Thickness of slice.</p>
+                <br>
+                <p><strong>THE ENTROPY (Chaos)</strong><br>
+                Jitter: Random displacement.<br>
+                Radical Mode: Unlocks extreme physics.</p>
+            </div>
+            <div class="close-modal" onclick="document.getElementById('info-modal').style.display='none'">CLOSE</div>
         </div>
     </div>
 
@@ -47,17 +57,25 @@
                 <div class="radio-option"><input type="radio" name="res" value="1080"><div class="radio-tile"><span>HD</span></div></div>
                 <div class="radio-option"><input type="radio" name="res" value="0"><div class="radio-tile"><span>4K</span></div></div>
             </div>
+            <div id="res-warning" class="warning-text">⚠ High resolutions may cause slowness or crashes with high stitch counts.</div>
         </div>
 
         <div class="upload-container">
             <input type="file" id="upload" accept="video/*">
-            <label for="upload" class="btn-file" id="file-label">LOAD VIDEO SOURCE</label>
+            <label for="upload" class="btn-file" id="file-label">LOAD VIDEO</label>
             <div class="file-help">Compatible: .mp4, .mov, .webm</div>
-            <button class="btn-action" id="btn_ingest" disabled>INITIALIZE ENGINE</button>
+            
+            <div class="lock-option">
+                <input type="checkbox" id="chk_lock" checked>
+                <label for="chk_lock">Lock interface while rendering</label>
+            </div>
+            
+            <button class="btn-action" id="btn_ingest" disabled>GET STITCHES</button>
         </div>
         
         <div class="dev-section">
-            <div class="arch-info"><strong>V21.0 Alpha:</strong><br>Architecture: Modular (Cartographer/Artist).<br>New: Static Buffer & Map I/O.</div>
+            <div class="arch-info"><strong>V21.17 Stable:</strong><br>Fixes: Resize Logic, Button Styles.<br>Status: Active.</div>
+            <div id="debug-panel"><h4>KERNEL LOG</h4><pre id="debug_pre">Initializing V21 Interface...</pre></div>
         </div>
     </div>
 
@@ -66,6 +84,9 @@
             <h2>TIME TRAVEL</h2>
             <div class="header-buttons">
                 <span id="pixel_count" class="pixel-display">0px</span>
+                <button class="btn-info" onclick="document.getElementById('info-modal').style.display='flex'">i</button>
+                <button class="btn-radical" id="btn_radical" onclick="Workflow.toggleRadicalMode()">!RAD</button>
+                
                 <button class="btn-secondary" onclick="Workflow.resetParams()">RESET</button>
                 <button class="btn-secondary" onclick="Workflow.goToIngest()">BACK</button>
                 <button class="btn-render-small" id="btn_develop" onclick="Workflow.openDevelopModal()">DEVELOP</button>
@@ -74,7 +95,18 @@
         
         <div class="lightbox-wrapper">
             <div class="stage-container" id="stage_container">
-                <img id="preview_img" src="" style="display:none; max-height:100%; max-width:100%; box-shadow: 0 0 20px #000;" />
+                <div id="overlay"><div class="loader"></div><div id="overlay-text">WEAVING...</div></div>
+                
+                <div id="timeline-ruler">
+                    <span id="ruler-start" class="ruler-label">0.0s</span>
+                    <div class="ruler-tick tick-25"></div>
+                    <div class="ruler-tick tick-50"></div>
+                    <div class="ruler-tick tick-75"></div>
+                    <span id="ruler-end" class="ruler-label">0.0s</span>
+                </div>
+                
+                <img id="preview_img" src="" style="display:none;" />
+                <div id="crop-lens"></div>
                 <div id="debounce-timer" style="display:none;">WAIT</div>
             </div>
         </div>
@@ -82,33 +114,45 @@
         <div class="editor-controls">
             <div class="controls-scroll">
                 <details open>
-                    <summary>GEOMETRY (THE CUT)</summary>
+                    <summary>MEMORY (THE TIME)</summary>
                     <div class="control-group">
                         <div class="control-row">
-                            <label>STITCH CT</label>
-                            <input type="range" id="input_count" min="10" max="60" value="50" oninput="Workflow.updateCoords()">
-                            <span id="val_cnt" class="coord-val">50</span>
+                            <label>MODE</label>
+                            <div class="mini-group" id="grp_anchor">
+                                <button class="mini-btn active" data-val="fit" onclick="Workflow.setParam('anchor', 'fit')">FIT</button>
+                                <button class="mini-btn" data-val="focus" onclick="Workflow.setParam('anchor', 'focus')">FOCUS</button>
+                            </div>
                         </div>
-                        <div class="control-row">
-                            <label>WIDTH PX</label> 
-                            <input type="range" id="input_width" min="1" max="100" value="20" oninput="Workflow.updateCoords()">
-                            <span id="val_wid" class="coord-val">20</span>
+                        <div class="control-row" id="row_index">
+                            <label>INDEX</label> 
+                            <input type="range" id="input_index" min="0" max="100" value="50" oninput="Workflow.updateCoords()">
+                            <span id="val_idx" class="coord-val">50%</span>
+                        </div>
+                        <div class="control-row" id="row_span">
+                            <label>SPAN</label>
+                            <input type="range" id="input_span" min="0" max="100" value="20" oninput="Workflow.updateCoords()">
+                            <span id="val_span" class="coord-val">20%</span>
                         </div>
                     </div>
                 </details>
 
                 <details open>
-                    <summary>MEMORY (THE TIME)</summary>
+                    <summary>GEOMETRY (THE CUT)</summary>
                     <div class="control-group">
                         <div class="control-row">
-                            <label>INDEX</label> 
-                            <input type="range" id="input_index" min="0" max="100" value="50" oninput="Workflow.updateCoords()">
-                            <span id="val_idx" class="coord-val">50%</span>
+                            <label>STITCH CT</label>
+                            <input type="range" id="input_count" min="5" max="60" value="50" oninput="Workflow.updateCoords()">
+                            <span id="val_cnt" class="coord-val">50</span>
                         </div>
-                        <div class="control-row">
-                            <label>SPAN</label>
-                            <input type="range" id="input_span" min="0" max="100" value="20" oninput="Workflow.updateCoords()">
-                            <span id="val_span" class="coord-val">20%</span>
+                        <div class="control-row" id="row_stitch_width">
+                            <label>STITCH PX</label> 
+                            <input type="range" id="input_width" min="1" max="500" value="20" oninput="Workflow.updateCoords()">
+                            <span id="val_wid" class="coord-val">20</span>
+                        </div>
+                        <div class="control-row" id="row_image_width" style="display:none;">
+                            <label>IMAGE PX</label> 
+                            <input type="range" id="input_image_width" min="100" max="3800" value="1200" oninput="Workflow.updateCoords()">
+                            <span id="val_img_wid" class="coord-val">1200</span>
                         </div>
                     </div>
                 </details>
@@ -119,8 +163,8 @@
                         <div class="control-row">
                             <label>BURST</label>
                             <div class="mini-group" id="grp_burst">
-                                <button class="mini-btn" data-val="soft" onclick="Workflow.setParam('burst', 'soft')">SOFT</button>
-                                <button class="mini-btn active" data-val="med" onclick="Workflow.setParam('burst', 'med')">MED</button>
+                                <button class="mini-btn active" data-val="soft" onclick="Workflow.setParam('burst', 'soft')">SOFT</button>
+                                <button class="mini-btn" data-val="med" onclick="Workflow.setParam('burst', 'med')">MED</button>
                                 <button class="mini-btn" data-val="hard" onclick="Workflow.setParam('burst', 'hard')">HARD</button>
                             </div>
                         </div>
@@ -131,19 +175,46 @@
                                 <button class="mini-btn" data-val="far" onclick="Workflow.setParam('gap', 'far')">FAR</button>
                             </div>
                         </div>
-                        <div class="jitter-desk">
-                            <div class="jitter-col">
-                                <label>X JIT</label>
-                                <input type="range" id="input_xjitter" min="0" max="100" value="0" oninput="Workflow.updateCoords()">
+                        <div class="control-row">
+                            <label>X JIT</label>
+                            <input type="range" id="input_xjitter" min="0" max="100" value="10" oninput="Workflow.updateCoords()">
+                            <span id="val_x" class="coord-val">10</span>
+                        </div>
+                        <div class="control-row">
+                            <label>Y JIT</label>
+                            <input type="range" id="input_yjitter" min="0" max="100" value="10" oninput="Workflow.updateCoords()">
+                            <span id="val_y" class="coord-val">10</span>
+                        </div>
+                        <div class="control-row">
+                            <label>Z ROT</label>
+                            <input type="range" id="input_zjitter" min="0" max="8" step="1" value="0" oninput="Workflow.updateCoords()">
+                            <span id="val_z" class="coord-val">0</span>
+                        </div>
+                        <div class="control-row" id="row_direction" style="display:none;">
+                            <label>OVERLAP</label>
+                            <div class="mini-group" id="grp_depth">
+                                <button class="mini-btn active" data-val="ltr" onclick="Workflow.setParam('depth', 'ltr')">L>R</button>
+                                <button class="mini-btn" data-val="rtl" onclick="Workflow.setParam('depth', 'rtl')">R>L</button>
+                                <button class="mini-btn" data-val="mix" onclick="Workflow.setParam('depth', 'mix')">MIX</button>
                             </div>
-                            <div class="jitter-col">
-                                <label>Y JIT</label>
-                                <input type="range" id="input_yjitter" min="0" max="100" value="0" oninput="Workflow.updateCoords()">
+                        </div>
+                    </div>
+                </details>
+
+                <details>
+                    <summary>CROP</summary>
+                    <div class="control-group">
+                        <div class="control-row">
+                            <label>RATIO</label>
+                            <div class="mini-group ratio-mini-group">
+                                <button class="mini-btn active" onclick="Workflow.setRatio('max')">MAX</button>
+                                <button class="mini-btn" onclick="Workflow.setRatio('1:1')">1:1</button>
+                                <button class="mini-btn" onclick="Workflow.setRatio('4:5')">4:5</button>
+                                <button class="mini-btn" onclick="Workflow.setRatio('16:9')">16:9</button>
                             </div>
-                            <div class="jitter-col">
-                                <label>Z ROT</label>
-                                <input type="range" id="input_zjitter" min="0" max="45" value="0" oninput="Workflow.updateCoords()">
-                            </div>
+                        </div>
+                        <div class="control-row" style="justify-content:center; color:#666; font-size:0.7em;">
+                            DRAG BOX TO REPOSITION
                         </div>
                     </div>
                 </details>
@@ -169,7 +240,6 @@
 
         <div class="editor-controls darkroom-controls">
             <div class="controls-scroll">
-                
                 <details open>
                     <summary>PHYSICS (THE NEGATIVE)</summary>
                     <div class="control-group">
@@ -183,16 +253,8 @@
                             <input type="range" id="dk_temp" min="0" max="100" value="0" oninput="Artist.update()">
                             <span class="coord-val">COOL</span>
                         </div>
-                        <div class="control-row">
-                            <label>LINK</label>
-                            <div class="mini-group" id="grp_link">
-                                <button class="mini-btn active" onclick="Artist.setMode('link', 'sync')">SYNC</button>
-                                <button class="mini-btn" onclick="Artist.setMode('link', 'break')">BREAK</button>
-                            </div>
-                        </div>
                     </div>
                 </details>
-
                 <details>
                     <summary>FINISH (THE PRINT)</summary>
                     <div class="control-group">
@@ -206,13 +268,12 @@
                         </div>
                     </div>
                 </details>
-                
             </div>
         </div>
     </div>
 
-    <script src="js/engine/artist.js"></script>
-    <script src="js/ui/workflow.js"></script>
-    <script src="js/main.js"></script>
+	<script src="js/engine/artist.js?v=21.19"></script>
+	<script src="js/ui/workflow.js?v=21.19"></script>
+	<script src="js/main.js?v=21.19"></script>
 </body>
 </html>

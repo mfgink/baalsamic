@@ -1,345 +1,184 @@
-# v21.0 - python/engine.py
+# v21.12.6 - python/engine.py
+# REFACTOR: Shift Logic Implementation (No Looping)
+# TIMESTAMP: 20251225-2210
 import cv2
-import os
 import numpy as np
 import random
+import os
 import time
-import math
 
-def get_video_metadata(file_path):
+def get_video_metadata(video_path):
     """
-    Extracts duration, FPS, and dimensions from the video source.
+    Independent Utility: Extracts structural metadata.
     """
-    if not os.path.exists(file_path):
-        return {"error": "File not found"}
+    try:
+        cap = cv2.VideoCapture(video_path)
+        if not cap.isOpened():
+            print(f"UTILS ERROR: Cannot open {video_path}")
+            return {"duration": 0, "fps": 0, "width": 0, "height": 0}
+        
+        frames = int(cap.get(cv2.CAP_PROP_FRAME_COUNT))
+        fps = cap.get(cv2.CAP_PROP_FPS)
+        width = int(cap.get(cv2.CAP_PROP_FRAME_WIDTH))
+        height = int(cap.get(cv2.CAP_PROP_FRAME_HEIGHT))
+        
+        duration = frames / fps if fps > 0 else 0
+        cap.release()
+        
+        return {
+            "duration": duration,
+            "fps": fps,
+            "width": width,
+            "height": height,
+            "frame_count": frames
+        }
+    except Exception as e:
+        print(f"UTILS EXCEPTION: {e}")
+        return {"duration": 0, "fps": 0, "width": 0, "height": 0}
 
-    cap = cv2.VideoCapture(file_path)
-    if not cap.isOpened():
-        return {"error": "Could not open video file"}
-
-    fps = cap.get(cv2.CAP_PROP_FPS)
-    frame_count = cap.get(cv2.CAP_PROP_FRAME_COUNT)
-    width = cap.get(cv2.CAP_PROP_FRAME_WIDTH)
-    height = cap.get(cv2.CAP_PROP_FRAME_HEIGHT)
-    
-    duration = 0.0
-    if fps > 0:
-        duration = frame_count / fps
-
-    cap.release()
-    return {
-        "duration": duration,
-        "fps": fps,
-        "width": int(width),
-        "height": int(height)
-    }
-
-def rotate_image(image, angle):
+def process_video(video_path, config):
     """
-    Rotates an image slice around its center, expanding borders.
+    V21 KERNEL: Structural Slicing Engine (Shift Logic Active)
     """
-    h, w = image.shape[:2]
-    rad = math.radians(angle)
-    sin, cos = math.sin(rad), math.cos(rad)
-    new_w = int((h * abs(sin)) + (w * abs(cos)))
-    new_h = int((h * abs(cos)) + (w * abs(sin)))
-    center = (w // 2, h // 2)
-    M = cv2.getRotationMatrix2D(center, angle, 1.0)
-    M[0, 2] += (new_w / 2) - center[0]
-    M[1, 2] += (new_h / 2) - center[1]
-    
-    # Convert to BGRA if not already
-    if image.shape[2] == 3:
-        image = cv2.cvtColor(image, cv2.COLOR_BGR2BGRA)
+    try:
+        # 1. CONFIG & CLAMPING
+        count = max(1, int(config.get('count', 50)))
+        width = max(1, int(config.get('width', 20)))
         
-    return cv2.warpAffine(image, M, (new_w, new_h), 
-                          borderMode=cv2.BORDER_CONSTANT, 
-                          borderValue=(0,0,0,0))
+        index_pct = float(config.get('index', 50))
+        span_pct = float(config.get('span', 20))
+        anchor = config.get('anchor', 'fit') 
+        
+        xjitter = int(config.get('xjitter', 0))
+        yjitter = int(config.get('yjitter', 0))
+        zjitter = int(config.get('zjitter', 0))
 
-def overlay_image_alpha(img, img_overlay, x, y):
-    """
-    Standard alpha blending overlay.
-    """
-    h, w = img_overlay.shape[:2]
-    canvas_h, canvas_w = img.shape[:2]
-    
-    if x >= canvas_w or y >= canvas_h: return img
-    if x + w < 0 or y + h < 0: return img
-    
-    x1, y1 = max(x, 0), max(y, 0)
-    x2, y2 = min(x + w, canvas_w), min(y + h, canvas_h)
-    
-    o_x1 = x1 - x
-    o_y1 = y1 - y
-    o_x2 = o_x1 + (x2 - x1)
-    o_y2 = o_y1 + (y2 - y1)
-    
-    if x2 <= x1 or y2 <= y1: return img
-    
-    overlay_crop = img_overlay[o_y1:o_y2, o_x1:o_x2]
-    background_crop = img[y1:y2, x1:x2]
-    
-    alpha_mask = overlay_crop[:, :, 3] / 255.0
-    alpha_inv = 1.0 - alpha_mask
-    
-    for c in range(3):
-        background_crop[:, :, c] = (alpha_mask * overlay_crop[:, :, c] + 
-                                    alpha_inv * background_crop[:, :, c])
-                                    
-    img[y1:y2, x1:x2] = background_crop
-    return img
+        cap = cv2.VideoCapture(video_path)
+        if not cap.isOpened():
+            return {"error": "Could not open video file."}
 
-def generate_stitch_map(video_path, params, output_folder):
-    """
-    THE CARTOGRAPHER (V21 Core)
-    Generates the 'Raw Strip' image and the 'Stitch Map' JSON.
-    """
-    # 1. Parse Parameters
-    count = params['count']
-    base_width = params['width']
-    idx_pct = params['index'] / 100.0
-    span_pct = params['span'] / 100.0
-    
-    x_jit_max = params['xjitter']
-    y_jit_max = params['yjitter']
-    z_jit_max = params['zjitter'] # Rotation
-    
-    anchor = params['anchor'] # 'fit' or 'focus'
-    burst_mode = params['burst']
-    gap_mode = params['gap'] # Used for Thermal Calc
-    direction = params['direction']
-    export_mode = params['export_mode']
-
-    # 2. Video Init
-    cap = cv2.VideoCapture(video_path)
-    if not cap.isOpened():
-        return {"error": "Failed to open video"}
-
-    vid_w = int(cap.get(cv2.CAP_PROP_FRAME_WIDTH))
-    vid_h = int(cap.get(cv2.CAP_PROP_FRAME_HEIGHT))
-    fps = cap.get(cv2.CAP_PROP_FPS)
-    total_frames = int(cap.get(cv2.CAP_PROP_FRAME_COUNT))
-    duration = total_frames / fps if fps > 0 else 0
-    
-    # 3. Timeline Logic (The Memory)
-    span_sec = 1.0 + (span_pct * (duration - 1.0))
-    center = duration * idx_pct
-    
-    if anchor == 'focus':
-        # Focus: Center point is index, span spreads out
-        start_time = max(0, center - (span_sec / 2.0))
-        end_time = min(duration, center + (span_sec / 2.0))
-    else:
-        # Fit: Standard 0-100 logic (V20 Classic)
-        # Actually V20 Fit maps 0-100 to full duration usually
-        # But let's respect the V21 "Time Travel" logic:
-        # If Fit, usually implies the whole video? 
-        # Let's align with V20 logic: 
-        start_time = 0.0
-        end_time = duration
-        # If user explicitly sets Span in Fit mode, we respect it?
-        # For now, let's assume 'Fit' overrides Index/Span to cover full video 
-        # unless we want 'Fit' to just mean "Stitch Width is manual".
-        # Re-reading V20: Fit vs Focus dictates *Width* calculation mostly.
-        # Let's keep Time logic consistent:
-        # If Fit, we use the specific start/end derived from index/span? 
-        # No, typically Fit maps the whole timeline. 
-        # Let's stick to the User Story: "Which moments of time to capture".
-        # We will use the computed start/end regardless of anchor.
+        total_frames = int(cap.get(cv2.CAP_PROP_FRAME_COUNT))
+        fps = cap.get(cv2.CAP_PROP_FPS)
+        if fps == 0: fps = 30
+        duration = total_frames / fps
         
-    available_time = end_time - start_time
-    
-    # 4. Rhythm Logic (The Open Eye)
-    burst_map = []
-    for _ in range(count):
-        val = 1
-        if burst_mode == 'med': val = 3
-        elif burst_mode == 'hard': val = 10
-        elif burst_mode == 'mix': val = random.randint(1, 5)
-        burst_map.append(val)
-        
-    frame_dur = 1.0 / fps if fps > 0 else 0.033
-    total_burst_time = sum(burst_map) * frame_dur
-    
-    # Gap Logic
-    remaining_time = max(0, available_time - total_burst_time)
-    gap_time = 0
-    if count > 1:
-        gap_time = remaining_time / (count - 1)
-        
-    # 5. Physics Init (V21 New)
-    stitch_map = []
-    
-    # Random Seeds
-    x_jitters = [random.randint(-x_jit_max, x_jit_max) for _ in range(count)]
-    y_jitters = [random.randint(-y_jit_max, y_jit_max) for _ in range(count)]
-    z_jitters = [random.randint(-z_jit_max, z_jit_max) for _ in range(count)]
-    
-    # Velocity Trackers
-    prev_coords = (0, 0) # (x, y) relative to center
-    
-    # Thermal Trackers
-    current_temp = 0.0 # 0.0 to 1.0
-    cooling_rate = 0.1 # Cooling per second of gap
-    heating_rate = 0.05 # Heating per frame of burst
-    
-    current_video_time = start_time
-    canvas_cursor_x = 0
-    
-    slices = [] # {img, x, y, map_data}
-    
-    # 6. Extraction Loop
-    for i in range(count):
-        # A. Timing
-        target_time = current_video_time
-        target_time = max(0, min(duration - 0.1, target_time))
-        
-        # B. Thermal Physics 
-        # Heat up based on burst
-        frames_in_burst = burst_map[i]
-        current_temp += (frames_in_burst * heating_rate)
-        
-        # Cool down based on gap (pre-gap)
-        # Note: Gap happens *after* this stitch usually, or before?
-        # Logic: Gap is travel time. 
-        current_temp -= (gap_time * cooling_rate)
-        current_temp = max(0.0, min(1.0, current_temp))
-        
-        # C. Geometry & Velocity 
-        x_off = x_jitters[i]
-        y_off = y_jitters[i]
-        z_rot = z_jitters[i]
-        
-        # Calculate Velocity (Euclidean distance from previous jitter offset)
-        # This represents how "erratic" the camera is moving relative to the ideal path
-        dx = x_off - prev_coords[0]
-        dy = y_off - prev_coords[1]
-        velocity = math.sqrt(dx*dx + dy*dy)
-        prev_coords = (x_off, y_off)
-        
-        # D. Frame Capture
-        cap.set(cv2.CAP_PROP_POS_MSEC, target_time * 1000)
-        ret, frame = cap.read()
-        
-        if ret:
-            # E. Slicing
-            # Center of frame + y_jitter
-            center_x = (vid_w // 2) + y_off # Note: y_jitter affects horizontal center in V20 logic? 
-            # V20 Logic: "y_jitter" usually shifted the *source* window left/right 
-            # while "x_jitter" changed the *width*. 
-            # Let's standardize for V21:
-            # Y-Jitter = Horizontal Offset on Source (Pan)
-            # X-Jitter = Width Variance
-            # Wait, roadmap says: "SLIP ... Vertical Displacement (y-offset)" 
-            # This implies Y-Jitter should be *Vertical* placement on canvas in Screen 3.
-            # But in Screen 2 (Render), we need to decide what Y-Jitter does.
-            # If we want "Broken Panel" (Vertical Sheer), that is a Canvas operation (Screen 3).
-            # So in Screen 2, Y-Jitter might strictly be Source Selection (Pan)?
-            # Or do we bake the vertical offset into the canvas?
-            # DECISION: Screen 2 produces a FLAT STRIP. 
-            # Y-Jitter (Source) = Shifting the crop window Left/Right on the source video.
-            # Vertical Slip (Canvas) = Shifting the strip Up/Down on the final print.
-            # Let's map V20 "Y Jitter" to Source X Offset.
+        # 2. TIME WINDOW CALCULATION (SHIFT LOGIC)
+        if anchor == 'fit':
+            start_time = 0.0
+            span_seconds = duration
+        else:
+            # Calculate theoretical window based on center (Index)
+            span_seconds = 1.0 + ((span_pct / 100.0) * (duration - 1.0))
+            center_time = (index_pct / 100.0) * duration
             
-            src_center_x = (vid_w // 2) + y_off 
+            half_span = span_seconds / 2.0
+            start_time = center_time - half_span
+            end_time = center_time + half_span
             
-            # Width Calc
-            current_width = max(1, base_width + x_off)
+            # Apply Shift (Prevent Looping)
+            if start_time < 0:
+                # Window is too far left; shift right to start at 0
+                diff = abs(start_time)
+                start_time = 0.0
+                end_time += diff
             
-            src_x1 = max(0, src_center_x - (current_width // 2))
-            src_x2 = min(vid_w, src_x1 + current_width)
-            real_w = src_x2 - src_x1
+            if end_time > duration:
+                # Window is too far right; shift left to end at duration
+                diff = end_time - duration
+                start_time -= diff
+                # end_time = duration (implicit)
             
-            if real_w > 0:
-                roi = frame[:, src_x1:src_x2]
-                
-                # F. Rotation (Z)
-                final_slice = roi
-                offset_y = 0 # Vertical centering for rotation
-                offset_x = 0
-                
-                if abs(z_rot) > 0:
-                    final_slice = rotate_image(roi, z_rot)
-                    new_h, new_w = final_slice.shape[:2]
-                    offset_y = (vid_h - new_h) // 2
-                    offset_x = (current_width - new_w) // 2
-                else:
-                    final_slice = cv2.cvtColor(roi, cv2.COLOR_BGR2BGRA)
-                
-                # G. Map Generation
-                map_entry = {
-                    "id": i,
-                    "x": canvas_cursor_x + offset_x, # Where it sits on the raw strip
-                    "y": offset_y, # Vertical center offset (rotation only)
-                    "w": final_slice.shape[1], # Actual width
-                    "h": final_slice.shape[0],
-                    "src_time": float(f"{target_time:.3f}"),
-                    "velocity": float(f"{velocity:.2f}"), # 
-                    "thermal_load": float(f"{current_temp:.2f}"), # 
-                    "exposure_bias": random.uniform(-1.0, 1.0) # For LINK effect
-                }
-                
-                slices.append({
-                    "img": final_slice,
-                    "x": canvas_cursor_x + offset_x,
-                    "y": offset_y,
-                    "map": map_entry
-                })
-                
-                stitch_map.append(map_entry)
-                
-            # Advance Cursor
-            canvas_cursor_x += current_width
+            # Final hard clamp to prevent crashes on extremely short videos
+            start_time = max(0.0, start_time)
+            
+        # Recalculate step based on the shifted window
+        time_step = span_seconds / max(1, count)
         
-        # Advance Time
-        current_video_time += (gap_time + (burst_map[i] * frame_dur))
-
-    cap.release()
-    
-    # 7. Compositing (The Static Buffer)
-    # Calculate total canvas size
-    # Width is the cursor position. Height is video height.
-    # No padding. [Refined Req]
-    total_w = max(1, canvas_cursor_x)
-    
-    # Create Canvas
-    canvas = np.zeros((vid_h, total_w, 4), dtype=np.uint8)
-    
-    # Depth Sorting (LTR/RTL)
-    draw_order = slices.copy()
-    if direction == 'rtl':
-        draw_order.reverse()
-    
-    for s in draw_order:
-        overlay_image_alpha(canvas, s['img'], s['x'], s['y'])
+        # 3. CANVAS SETUP
+        video_w = int(cap.get(cv2.CAP_PROP_FRAME_WIDTH))
+        video_h = int(cap.get(cv2.CAP_PROP_FRAME_HEIGHT))
         
-    # 8. Output
-    # Drop Alpha for JPEG Buffer to save space/speed
-    # Keep Alpha for High-Res Export if requested? For now, stick to JPG/PNG mix.
-    # REQ-08: Static Buffer
-    
-    if export_mode:
-        # High Res Export [REQ-09]
-        # Use PNG for quality
-        timestamp = int(time.time())
-        filename = f"BAAL_V21_EXPORT_{timestamp}.png"
-        path = os.path.join(output_folder, filename)
-        cv2.imwrite(path, canvas) # Writes BGRA as PNG (Supported)
-        image_url = f"/uploads/{filename}"
-    else:
-        # Preview Buffer
-        filename = "preview_buffer.jpg"
-        path = os.path.join(output_folder, filename)
-        # Drop Alpha
-        jpg_canvas = canvas[:, :, :3]
-        cv2.imwrite(path, jpg_canvas, [int(cv2.IMWRITE_JPEG_QUALITY), 85])
-        image_url = f"/uploads/{filename}"
+        final_w = count * width
+        final_h = video_h 
+        
+        canvas = np.zeros((final_h, final_w, 3), dtype=np.uint8)
+        stitch_map = [] 
 
-    return {
-        "status": "success",
-        "image_url": image_url,
-        "stitch_map": stitch_map,
-        "width": total_w,
-        "height": vid_h
-    }
-# END OF DOCUMENT - python/engine.py
+        # 4. WEAVE LOOP
+        for i in range(count):
+            target_time = start_time + (i * time_step)
+            
+            # Hard Clamp (No Modulo)
+            if target_time < 0: target_time = 0
+            if target_time > duration: target_time = duration - 0.01
+
+            target_frame = int(target_time * fps)
+            # Frame Count Safety
+            if target_frame >= total_frames: target_frame = total_frames - 1
+            
+            cap.set(cv2.CAP_PROP_POS_FRAMES, target_frame)
+            
+            ret, frame = cap.read()
+            if not ret: 
+                # Fallback: Black frame if read fails
+                frame = np.zeros((video_h, video_w, 3), dtype=np.uint8)
+
+            # Structural Jitter
+            center_x = video_w // 2
+            dx = random.randint(-xjitter, xjitter) if xjitter > 0 else 0
+            dy = random.randint(-yjitter, yjitter) if yjitter > 0 else 0
+            
+            if zjitter > 0:
+                angle = random.uniform(-zjitter, zjitter)
+                M = cv2.getRotationMatrix2D((video_w/2, video_h/2), angle, 1)
+                frame = cv2.warpAffine(frame, M, (video_w, video_h))
+
+            # Slice
+            start_x = (center_x - (width // 2)) + dx
+            if dy != 0: frame = np.roll(frame, dy, axis=0)
+
+            # Horizontal clamping
+            if start_x < 0: start_x = 0
+            if start_x + width > video_w: start_x = video_w - width
+            
+            stitch = frame[:, start_x:start_x+width]
+            
+            # Verify shape (in case of edge rounding errors)
+            h, w, c = stitch.shape
+            if w != width: stitch = cv2.resize(stitch, (width, h))
+
+            # Place
+            x_pos = i * width
+            canvas[:, x_pos:x_pos+width] = stitch
+            
+            stitch_map.append({ 
+                "id": i, "x": x_pos, "width": width,
+                "src_time": target_time
+            })
+
+        cap.release()
+
+        # 5. SAVE
+        base_dir = os.path.abspath(os.getcwd())
+        output_filename = f"render_{int(time.time())}.png"
+        output_path = os.path.join(base_dir, "uploads", output_filename)
+        
+        cv2.imwrite(output_path, canvas)
+        print(f"KERNEL RENDER COMPLETE: {output_path}")
+        
+        return {
+            "status": "success",
+            "image_url": f"/uploads/{output_filename}",
+            "stitch_map": stitch_map,
+            "width": final_w,
+            "height": final_h,
+            "render_start_time": start_time,
+            "render_end_time": start_time + span_seconds
+        }
+
+    except Exception as e:
+        print(f"KERNEL CRASH: {e}")
+        import traceback
+        traceback.print_exc()
+        return {"error": str(e)}
+# END OF DOCUMENT - python/engine.py [20251225-2210]
