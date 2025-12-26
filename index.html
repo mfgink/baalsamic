@@ -4,7 +4,7 @@
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,user-scalable=no" />
     <title>Baalsamic V21: Failure Engine</title>
-    <link rel="stylesheet" href="css/styles.css?v=21.17">
+    <link rel="stylesheet" href="css/styles.css?v=21.22">
 </head>
 <body>
 
@@ -43,6 +43,12 @@
     <div id="screen-ingest" class="container">
         <h1>BAALSAMIC V21</h1>
         
+        <div class="upload-container">
+            <input type="file" id="upload" accept="video/*">
+            <label for="upload" class="btn-file" id="file-label">LOAD VIDEO</label>
+            <div class="file-help">Compatible: .mp4, .mov, .webm</div>
+        </div>
+
         <div class="config-panel">
             <span class="config-label">Sampling Rate (FPS)</span>
             <div class="radio-group">
@@ -57,39 +63,40 @@
                 <div class="radio-option"><input type="radio" name="res" value="1080"><div class="radio-tile"><span>HD</span></div></div>
                 <div class="radio-option"><input type="radio" name="res" value="0"><div class="radio-tile"><span>4K</span></div></div>
             </div>
-            <div id="res-warning" class="warning-text">⚠ High resolutions may cause slowness or crashes with high stitch counts.</div>
+            <div id="res-warning" class="text-muted" style="margin-top:5px;">High resolutions may cause slowness or crashes with high stitch counts.</div>
         </div>
-
-        <div class="upload-container">
-            <input type="file" id="upload" accept="video/*">
-            <label for="upload" class="btn-file" id="file-label">LOAD VIDEO</label>
-            <div class="file-help">Compatible: .mp4, .mov, .webm</div>
-            
-            <div class="lock-option">
-                <input type="checkbox" id="chk_lock" checked>
-                <label for="chk_lock">Lock interface while rendering</label>
-            </div>
-            
+        
+        <div class="spacer-bottom">
             <button class="btn-action" id="btn_ingest" disabled>GET STITCHES</button>
         </div>
         
         <div class="dev-section">
-            <div class="arch-info"><strong>V21.17 Stable:</strong><br>Fixes: Resize Logic, Button Styles.<br>Status: Active.</div>
             <div id="debug-panel"><h4>KERNEL LOG</h4><pre id="debug_pre">Initializing V21 Interface...</pre></div>
         </div>
     </div>
 
     <div id="screen-time-travel" style="display:none;">
         <div class="tuner-header">
-            <h2>TIME TRAVEL</h2>
-            <div class="header-buttons">
-                <span id="pixel_count" class="pixel-display">0px</span>
-                <button class="btn-info" onclick="document.getElementById('info-modal').style.display='flex'">i</button>
-                <button class="btn-radical" id="btn_radical" onclick="Workflow.toggleRadicalMode()">!RAD</button>
+            
+            <h1 style="font-size: 1.2em; margin:0; color:#666;">TIME TRAVEL</h1>
+
+            <div class="control-deck">
                 
-                <button class="btn-secondary" onclick="Workflow.resetParams()">RESET</button>
-                <button class="btn-secondary" onclick="Workflow.goToIngest()">BACK</button>
-                <button class="btn-render-small" id="btn_develop" onclick="Workflow.openDevelopModal()">DEVELOP</button>
+                <div class="utility-cluster">
+                    <div id="bpm-display" class="bpm-display">0 PX</div>
+                    
+                    <button class="btn-icon" onclick="Workflow.resetParams()" title="Reset">⟲</button>
+                    <button class="btn-icon" id="btn_lock" onclick="Workflow.toggleLock()" title="Lock Interface">🔒</button>
+                    <button class="btn-icon" onclick="document.getElementById('info-modal').style.display='flex'" title="Info">ℹ</button>
+                    <button class="btn-icon" id="btn_radical" onclick="Workflow.toggleRadicalMode()" title="Radical Mode">☢</button>
+                </div>
+
+                <div class="transport-cluster">
+                    <button class="btn-transport" onclick="Workflow.goToIngest()" title="Back">|&lt;&lt;</button>
+                    <button class="btn-transport play" id="btn_play" onclick="Workflow.exportRawStrip()" title="Download">⭳</button>
+                    <button class="btn-transport finish" onclick="Workflow.expressToDarkroom()" title="Finish & Export">&gt;&gt;|</button>
+                </div>
+
             </div>
         </div>
         
@@ -221,59 +228,20 @@
             </div>
         </div>
     </div>
-
-    <div id="screen-darkroom" style="display:none;">
+    
+    <div id="screen-darkroom" class="container" style="display:none;">
         <div class="tuner-header">
-            <h2>DARKROOM</h2>
-            <div class="header-buttons">
-                <button class="btn-secondary" onclick="Workflow.saveRecipe()">SAVE RECIPE</button>
-                <button class="btn-secondary" onclick="Workflow.backToTimeTravel()">BACK</button>
-                <button class="btn-render-small processing" id="btn_print" onclick="Workflow.exportPrint()">PRINT</button>
-            </div>
+            <h1 style="font-size: 1.2em; margin:0; color:#666;">DARKROOM</h1>
+            <button class="btn-secondary" onclick="Workflow.backToTimeTravel()">BACK</button>
         </div>
-
-        <div class="lightbox-wrapper" style="background: #111;">
-            <div class="stage-container">
-                <canvas id="darkroom_canvas"></canvas>
-            </div>
-        </div>
-
-        <div class="editor-controls darkroom-controls">
-            <div class="controls-scroll">
-                <details open>
-                    <summary>PHYSICS (THE NEGATIVE)</summary>
-                    <div class="control-group">
-                        <div class="control-row">
-                            <label>SLIP</label>
-                            <input type="range" id="dk_slip" min="0" max="100" value="0" oninput="Artist.update()">
-                            <span class="coord-val">OFF</span>
-                        </div>
-                        <div class="control-row">
-                            <label>TEMP</label>
-                            <input type="range" id="dk_temp" min="0" max="100" value="0" oninput="Artist.update()">
-                            <span class="coord-val">COOL</span>
-                        </div>
-                    </div>
-                </details>
-                <details>
-                    <summary>FINISH (THE PRINT)</summary>
-                    <div class="control-group">
-                        <div class="control-row">
-                            <label>MOOD</label>
-                             <input type="range" id="dk_mood" min="-100" max="100" value="0" oninput="Artist.update()">
-                        </div>
-                        <div class="control-row">
-                            <label>GLOSS</label>
-                            <input type="range" id="dk_gloss" min="0" max="100" value="0" oninput="Artist.update()">
-                        </div>
-                    </div>
-                </details>
-            </div>
+        <div class="lightbox-wrapper">
+             <canvas id="canvas_main"></canvas>
+            <div style="margin-top:20px; color:#666; font-size:0.8em;">(Darkroom processing enabled)</div>
         </div>
     </div>
 
-	<script src="js/engine/artist.js?v=21.19"></script>
-	<script src="js/ui/workflow.js?v=21.19"></script>
-	<script src="js/main.js?v=21.19"></script>
+    <script src="js/engine/artist.js?v=21.22"></script>
+    <script src="js/ui/workflow.js?v=21.22"></script>
+    <script src="js/main.js?v=21.22"></script> 
 </body>
 </html>

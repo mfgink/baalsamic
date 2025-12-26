@@ -1,13 +1,13 @@
-// v21.19.0 - js/ui/workflow.js
+// v21.22.3 - js/ui/workflow.js
 /*
     WORKFLOW ENGINE
-    - FIXED: Concurrency Hang (Stale requests now trigger next queue item)
-    - FIXED: Fit Mode disables Index/Span inputs
-    - FIXED: Resize correctly maintains Focus Mode timestamps
-    - FIXED: Updated Defaults (Width 250, Count 15)
+    - FEATURE: Transport Controls (Download, Finish)
+    - FIX: Slider Labels update immediately
+    - FIX: Darkroom Canvas initialization safety
+    - FIX: Reset button triggers immediate render
 */
 
-console.log("WORKFLOW: Loading V21.19...");
+console.log("WORKFLOW: Loading V21.22.3...");
 
 window.Workflow = (function() {
     
@@ -15,6 +15,7 @@ window.Workflow = (function() {
     let state = {
         sourceFilename: null,
         sourcePath: null, 
+        interfaceLocked: true, 
         videoMeta: { duration: 0, fps: 30, width: 1920, height: 1080 },
         
         params: {
@@ -50,12 +51,23 @@ window.Workflow = (function() {
         xjitter: 10, yjitter: 10, zjitter: 0
     };
 
+    // --- KERNEL LOGGING ---
+    function logKernel(msg) {
+        const el = document.getElementById('debug_pre');
+        if(el) {
+            const time = new Date().toLocaleTimeString('en-US', {hour12: false});
+            el.innerText += `\n[${time}] ${msg}`;
+            const panel = document.getElementById('debug-panel');
+            if(panel) panel.scrollTop = panel.scrollHeight;
+        }
+        console.log(`KERNEL: ${msg}`);
+    }
+
     // --- INIT ---
     function init() {
-        console.log("WORKFLOW: Init Called.");
+        logKernel("Initializing V21.22 Interface...");
         setupListeners();
         
-        // Fix: Recalculate timeline timestamps on window resize
         window.addEventListener('resize', () => {
             updateLensDimensions();
             updateRuler(); 
@@ -64,7 +76,12 @@ window.Workflow = (function() {
         try {
             updateCoords(true); 
             setupLensDrag();
-        } catch(e) { console.error("BOOT ERROR:", e); }
+            toggleLock(true); 
+            logKernel("Subsystems Ready.");
+        } catch(e) { 
+            console.error("BOOT ERROR:", e); 
+            logKernel("CRITICAL: Boot Sequence Failed.");
+        }
     }
 
     function setupListeners() {
@@ -74,12 +91,21 @@ window.Workflow = (function() {
             upload.parentNode.replaceChild(newUpload, upload);
             newUpload.addEventListener('change', (e) => {
                 if(e.target.files.length > 0) {
+                    const file = e.target.files[0];
+                    logKernel(`File Selected: ${file.name} (${(file.size/1024/1024).toFixed(2)} MB)`);
+                    
+                    const lbl = document.getElementById('file-label');
+                    if(lbl) {
+                        lbl.innerText = `LOADED ${file.name}`;
+                        lbl.classList.add('loaded'); 
+                    }
+
                     const btn = document.getElementById('btn_ingest');
                     if(btn) {
                         btn.disabled = false;
                         btn.innerText = "GET STITCHES";
                         state.sourcePath = null; 
-                        btn.onclick = () => handleIngestAction(e.target.files[0]);
+                        btn.onclick = () => handleIngestAction(file);
                     }
                 }
             });
@@ -87,7 +113,11 @@ window.Workflow = (function() {
     }
 
     function handleIngestAction(file) {
-        if(state.sourcePath) { switchScreen('screen-time-travel'); return; }
+        if(state.sourcePath) { 
+            logKernel("Switching to Time Travel (Existing Session)");
+            switchScreen('screen-time-travel'); 
+            return; 
+        }
         if(file) uploadAndIngest(file);
     }
     
@@ -105,6 +135,8 @@ window.Workflow = (function() {
         const btn = document.getElementById('btn_ingest');
         btn.innerText = "UPLOADING...";
         btn.disabled = true;
+        
+        logKernel(`Initiating Ingest for: ${file.name}`);
 
         const formData = new FormData();
         formData.append('video', file);
@@ -117,16 +149,24 @@ window.Workflow = (function() {
                 state.sourceFilename = data.filename;
                 state.sourcePath = data.path; 
                 state.videoMeta = data.metadata || { duration: 10, width: 1920, height: 1080 };
+                
+                const meta = state.videoMeta;
+                const fpsDisp = meta.fps || "N/A";
+                logKernel(`[Native] Duration: ${meta.duration.toFixed(2)}s | Res: ${meta.width}x${meta.height} | FPS: ${fpsDisp}`);
+                logKernel("Upload Complete. Server acknowledged 200 OK.");
+
                 resetParams(true); 
                 switchScreen('screen-time-travel');
                 queueRender();
             } else {
+                logKernel(`Server Error: ${data.error}`);
                 alert("Error: " + (data.error || "Unknown"));
                 btn.innerText = "GET STITCHES";
                 btn.disabled = false;
             }
         } catch(e) {
             console.error(e);
+            logKernel(`Network Exception: ${e.message}`);
             btn.innerText = "GET STITCHES";
             btn.disabled = false;
         }
@@ -156,7 +196,12 @@ window.Workflow = (function() {
         setVal('input_xjitter', DEFAULTS.xjitter);
         setVal('input_yjitter', DEFAULTS.yjitter);
         setVal('input_zjitter', DEFAULTS.zjitter);
-        if(!skipUpdate) updateCoords();
+        
+        // Immediate update and render (bypass debounce)
+        if(!skipUpdate) {
+            updateCoords(true); // Sync state & labels
+            executeRender(); // Immediate trigger
+        }
     }
 
     // --- UI UPDATES ---
@@ -175,23 +220,13 @@ window.Workflow = (function() {
         state.params.yjitter = getVal('input_yjitter', 0);
         state.params.zjitter = getVal('input_zjitter', 0);
         
-        const setTxt = (id, val) => { const el = document.getElementById(id); if(el) el.innerText = val; };
-        setTxt('val_cnt', state.params.count);
-        setTxt('val_wid', state.params.width);
-        setTxt('val_img_wid', state.params.img_width);
-        setTxt('val_x', state.params.xjitter);
-        setTxt('val_y', state.params.yjitter);
-        setTxt('val_z', state.params.zjitter);
-
-        // FIT/FOCUS MODE LOGIC
+        // Mode Logic
         const setDisp = (id, mode) => { const el = document.getElementById(id); if(el) el.style.display = mode; };
         const setDisabled = (id, disabled) => {
             const el = document.getElementById(id);
             if(el) {
                 if(disabled) el.classList.add('disabled');
                 else el.classList.remove('disabled');
-                
-                // Disable inputs within the row
                 const inputs = el.querySelectorAll('input');
                 inputs.forEach(i => i.disabled = disabled);
             }
@@ -208,10 +243,9 @@ window.Workflow = (function() {
             setDisabled('row_index', false);
             setDisabled('row_span', false);
         }
-        
         setDisp('row_direction', (state.params.zjitter > 0) ? 'flex' : 'none');
 
-        // Radical Limits UI
+        // Radical Visuals
         const checkRad = (id, val, limit) => {
             const el = document.getElementById(id);
             if(el) {
@@ -224,8 +258,22 @@ window.Workflow = (function() {
         checkRad('input_yjitter', state.params.yjitter, LIMITS.organic.y);
         checkRad('input_zjitter', state.params.zjitter, LIMITS.organic.z);
 
+        // Update Labels Immediately (Feedback #1)
+        updateLabels();
         updateCalculations();
+        
         if(!skipRender) queueRender();
+    }
+
+    // New Function to force label updates
+    function updateLabels() {
+        const setTxt = (id, val) => { const el = document.getElementById(id); if(el) el.innerText = val; };
+        setTxt('val_cnt', state.params.count);
+        setTxt('val_wid', state.params.width);
+        setTxt('val_img_wid', state.params.img_width);
+        setTxt('val_x', state.params.xjitter);
+        setTxt('val_y', state.params.yjitter);
+        setTxt('val_z', state.params.zjitter);
     }
 
     function updateCalculations() {
@@ -246,17 +294,37 @@ window.Workflow = (function() {
         if(elIdx) elIdx.innerText = labelStart.toFixed(1) + "s";
         
         let estW = (state.params.anchor === 'fit') ? (state.params.count * state.params.width) : state.params.img_width;
-        const pxDisp = document.getElementById('pixel_count');
-        if(pxDisp) {
-            pxDisp.innerText = "~" + estW + "px";
-            if(estW > 3200) pxDisp.classList.add('danger');
-            else pxDisp.classList.remove('danger');
+        
+        const bpmDisp = document.getElementById('bpm-display');
+        if(bpmDisp) {
+            bpmDisp.innerText = estW + " PX";
+            if(estW > 2200) bpmDisp.classList.add('danger');
+            else bpmDisp.classList.remove('danger');
         }
     }
 
+    // --- LOCK & TRANSPORT ---
+    function toggleLock(forceState = null) {
+        if(forceState !== null) state.interfaceLocked = forceState;
+        else state.interfaceLocked = !state.interfaceLocked;
+
+        const btn = document.getElementById('btn_lock');
+        if(btn) {
+            if(state.interfaceLocked) btn.classList.add('locked');
+            else btn.classList.remove('locked');
+        }
+    }
+
+    function expressToDarkroom() {
+        // 1. Download
+        exportRawStrip();
+        // 2. Move to Darkroom
+        goToDarkroom();
+    }
+
+    // --- RENDER LOGIC ---
     function queueRender() {
-        const btn = document.getElementById('btn_develop');
-        if(!btn) return;
+        const btn = document.getElementById('btn_play'); 
         state.queue.latestRequestId++;
         if(state.queue.isWeaving) {
             state.queue.pendingRequest = true;
@@ -265,9 +333,7 @@ window.Workflow = (function() {
         if(state.queue.timer) clearTimeout(state.queue.timer);
         if(state.queue.countdownInterval) clearInterval(state.queue.countdownInterval);
 
-        btn.innerText = "WAITING...";
-        btn.classList.add('waiting');
-        btn.classList.remove('processing');
+        if(btn) btn.style.opacity = "0.5"; 
         
         const timerDiv = document.getElementById('debounce-timer');
         if(timerDiv) {
@@ -292,15 +358,10 @@ window.Workflow = (function() {
         state.queue.isWeaving = true;
         state.queue.pendingRequest = false;
 
-        const btn = document.getElementById('btn_develop');
-        if(btn) {
-            btn.innerText = "WEAVING...";
-            btn.classList.remove('waiting');
-            btn.classList.add('processing');
-        }
+        const btn = document.getElementById('btn_play');
+        if(btn) btn.style.opacity = "1";
 
-        const chkLock = document.getElementById('chk_lock');
-        if(chkLock && chkLock.checked) {
+        if(state.interfaceLocked) {
              const ctrls = document.querySelector('.editor-controls');
              if(ctrls) ctrls.classList.add('interface-locked');
              document.body.style.cursor = 'wait';
@@ -336,10 +397,8 @@ window.Workflow = (function() {
                 body: JSON.stringify(payload)
             });
             
-            // CONCURRENCY FIX: Check staleness, but trigger cleanup/next queue
             if(state.queue.latestRequestId !== currentRequestId) {
                 console.warn(`WORKFLOW: Discarding stale render (ID: ${currentRequestId})`);
-                // Do not simply return. We must clear current state and check for pending.
                 onRenderComplete(); 
                 return;
             }
@@ -357,6 +416,7 @@ window.Workflow = (function() {
                     };
                     img.src = data.image_url + "?t=" + Date.now();
                 }
+                // Pre-load data for Darkroom if Artist exists
                 if(window.Artist) window.Artist.loadData(data.image_url, data.stitch_map, data.width, data.height);
             } else {
                 console.error("RENDER ERROR:", data.error);
@@ -377,11 +437,6 @@ window.Workflow = (function() {
         if(ctrls) ctrls.classList.remove('interface-locked');
         
         document.body.style.cursor = 'default';
-        const btn = document.getElementById('btn_develop');
-        if(btn) {
-            btn.innerText = "DEVELOP";
-            btn.classList.remove('processing');
-        }
 
         if(state.queue.pendingRequest) {
             queueRender();
@@ -409,14 +464,12 @@ window.Workflow = (function() {
             const rStart = document.getElementById('ruler-start');
             const rEnd = document.getElementById('ruler-end');
 
-            // If we have fresh render data, use it
             if (renderData && renderData.render_start_time !== undefined) {
                  if(rStart) rStart.innerText = renderData.render_start_time.toFixed(1) + "s";
                  if(rEnd) rEnd.innerText = renderData.render_end_time.toFixed(1) + "s";
                  return;
             }
             
-            // RESIZE FIX: Recalculate client-side if just resizing
             const dur = state.videoMeta.duration || 10;
             let tStart = 0;
             let tEnd = dur;
@@ -429,7 +482,6 @@ window.Workflow = (function() {
                 tStart = centerSec - halfSpan;
                 tEnd = centerSec + halfSpan;
 
-                // Shift Logic (Match Python)
                 if (tStart < 0) {
                     const diff = Math.abs(tStart);
                     tStart = 0;
@@ -544,11 +596,11 @@ window.Workflow = (function() {
         const btn = document.getElementById('btn_radical');
         if(btn) {
             if(state.radical) {
-                btn.classList.add('active');
-                document.body.classList.add('radical-mode');
+                btn.classList.add('radical-active');
+                document.body.classList.add('radical-active');
             } else {
-                btn.classList.remove('active');
-                document.body.classList.remove('radical-mode');
+                btn.classList.remove('radical-active');
+                document.body.classList.remove('radical-active');
             }
         }
         
@@ -575,7 +627,7 @@ window.Workflow = (function() {
              clamp('input_zjitter', LIMITS.organic.z);
         }
         
-        updateCoords(true); // Update state
+        updateCoords(true); 
 
         const postState = JSON.stringify(state.params);
         if(preState !== postState) {
@@ -595,17 +647,21 @@ window.Workflow = (function() {
         updateCoords();
     }
 
-    function openDevelopModal() { const el = document.getElementById('develop-modal'); if(el) el.style.display = 'flex'; }
+    function openDevelopModal() { 
+        const el = document.getElementById('develop-modal'); if(el) el.style.display = 'flex'; 
+    }
     
     function goToDarkroom() { 
         const el = document.getElementById('develop-modal');
         if(el) el.style.display = 'none';
         switchScreen('screen-darkroom');
+        
+        // Wait for screen to render before Init to avoid "Canvas Element Not Found"
         if(window.Artist) {
             setTimeout(() => {
                 window.Artist.init();
                 window.Artist.render();
-            }, 50);
+            }, 100);
         }
     }
     
@@ -625,6 +681,8 @@ window.Workflow = (function() {
         setParam,
         setRatio,
         toggleRadicalMode,
+        toggleLock,
+        expressToDarkroom,
         openDevelopModal,
         goToDarkroom,
         exportRawStrip,
@@ -636,4 +694,4 @@ window.Workflow = (function() {
         exportPrint: () => window.Artist && window.Artist.exportCanvas && window.Artist.exportCanvas()
     };
 })();
-// END OF DOCUMENT js/ui/workflow.js [20251225-2358]
+// END OF DOCUMENT js/ui/workflow.js [20251226-1845]

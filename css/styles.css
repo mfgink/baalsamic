@@ -1,4 +1,4 @@
-/* v21.19.0 - css/styles.css */
+/* v21.22.3 - css/styles.css */
 :root {
     --bg-dark: #0f0f0f;
     --bg-panel: #1a1a1a;
@@ -8,6 +8,8 @@
     --pink: #ff0055;
     --teal: #00ffcc;
     --warn: #ffaa00;
+    --terminal-green: #00ff00;
+    --lcd-bg: #000;
 }
 
 * { box-sizing: border-box; margin: 0; padding: 0; }
@@ -71,13 +73,115 @@ body {
 @keyframes spin { 0% { transform: rotate(0deg); } 100% { transform: rotate(360deg); } }
 
 
-/* HEADER */
+/* HEADER (Revised for Screen 1) */
 .tuner-header {
-    height: 60px; flex-shrink: 0; background: #0d0d0d; border-bottom: 1px solid #333;
-    display: flex; justify-content: space-between; align-items: center; padding: 0 10px; z-index: 10;
+    height: 70px; /* Slightly taller for the new deck */
+    flex-shrink: 0; 
+    background: #0d0d0d; 
+    border-bottom: 1px solid #333;
+    display: flex; 
+    justify-content: space-between; 
+    align-items: center; 
+    padding: 0 15px; 
+    z-index: 10;
 }
-.tuner-header h2 { margin: 0; color: var(--pink); font-size: 1.0em; letter-spacing: 1px; }
-.header-buttons { display: flex; gap: 8px; align-items: center; }
+
+/* --- BPM / PIXEL DISPLAY (The LCD) --- */
+.bpm-display {
+    background: var(--lcd-bg);
+    border: 1px solid #333;
+    border-radius: 4px;
+    padding: 5px 10px;
+    font-family: 'Courier New', Courier, monospace; /* Digital look */
+    font-weight: bold;
+    font-size: 1.2em;
+    color: var(--teal);
+    box-shadow: inset 0 0 5px rgba(0,255,204,0.2);
+    min-width: 80px;
+    text-align: center;
+    letter-spacing: 1px;
+    text-shadow: 0 0 2px var(--teal);
+}
+
+.bpm-display.danger {
+    color: var(--pink);
+    box-shadow: inset 0 0 5px rgba(255,0,85,0.3);
+    border-color: #500;
+    text-shadow: 0 0 3px var(--pink);
+}
+
+/* --- CONTROL DECK (Screen 2 Header) --- */
+.control-deck {
+    display: flex;
+    gap: 20px;
+    align-items: center;
+}
+
+.utility-cluster, .transport-cluster {
+    display: flex;
+    gap: 6px;
+    align-items: center;
+}
+
+.transport-cluster {
+    padding-left: 15px;
+    border-left: 1px solid #333;
+}
+
+/* Icon Buttons (Utility) */
+.btn-icon {
+    width: 36px; height: 36px;
+    background: #1a1a1a;
+    border: 1px solid #333;
+    border-radius: 4px;
+    color: #888;
+    font-size: 1.1em;
+    cursor: pointer;
+    display: flex; align-items: center; justify-content: center;
+    transition: all 0.2s;
+}
+.btn-icon:hover { background: #222; color: #fff; border-color: #555; }
+.btn-icon:active { transform: translateY(1px); }
+
+/* Lock State */
+.btn-icon.locked {
+    color: var(--teal);
+    border-color: var(--teal);
+    box-shadow: inset 0 0 5px rgba(0,255,204,0.2);
+}
+
+/* Rad State */
+.btn-icon.radical-active {
+    color: var(--pink);
+    border-color: var(--pink);
+    box-shadow: inset 0 0 5px rgba(255,0,85,0.3);
+    background: #200;
+}
+
+/* Transport Buttons (The Big Ones) */
+.btn-transport {
+    width: 44px; height: 36px;
+    background: transparent; 
+    border: 1px solid transparent; 
+    border-radius: 4px;
+    color: #ccc;
+    font-size: 1.0em;
+    cursor: pointer;
+    display: flex; align-items: center; justify-content: center;
+    transition: all 0.2s;
+}
+
+/* Unified Hover State - Teal */
+.btn-transport:hover { 
+    border-color: var(--teal); 
+    color: var(--teal);
+    background: rgba(0, 255, 204, 0.1);
+    box-shadow: 0 0 10px rgba(0,255,204,0.2); 
+}
+
+.btn-transport.play { font-size: 1.2em; }
+.btn-transport.finish { font-size: 1.2em; }
+
 
 /* INGEST STYLES */
 .config-panel { background: #1a1a1a; border: 1px solid #333; border-radius: 8px; padding: 15px; margin-bottom: 20px; }
@@ -89,109 +193,73 @@ body {
 .radio-option input:checked + .radio-tile { background: var(--pink); color: white; border-color: var(--pink); }
 #upload { display: none; }
 .btn-file { display: block; background: var(--pink); color: white; padding: 15px; width: 100%; font-weight: bold; text-transform: uppercase; text-align: center; cursor: pointer; border-radius: 4px; margin-bottom: 5px; }
-.file-help { color: #666; font-size: 0.8em; margin-bottom: 20px; text-align: center; }
-.lock-option { display: flex; justify-content: center; align-items: center; gap: 8px; margin-top: 10px; color: #aaa; font-size: 0.8em; }
+.btn-file.loaded { background: var(--teal) !important; color: #000 !important; border-color: var(--teal); }
 
-/* BUTTONS */
+.file-help { color: #666; font-size: 0.8em; margin-bottom: 20px; text-align: center; }
+.text-muted { color: #666; font-size: 0.8em; }
+.spacer-bottom { margin-top: 10px; margin-bottom: 20px; padding: 0 10px; }
+
+
+/* DEV SECTION */
+.dev-section { margin-top: 4px; }
+#debug-panel {
+    background: #000; border: 1px solid #333; border-radius: 4px;
+    padding: 10px; height: 150px; overflow-y: auto;
+    box-shadow: inset 0 0 10px rgba(0,0,0,0.8);
+}
+#debug-panel::-webkit-scrollbar { width: 6px; }
+#debug-panel::-webkit-scrollbar-track { background: #111; border-radius: 4px; }
+#debug-panel::-webkit-scrollbar-thumb { background: var(--terminal-green); border-radius: 4px; }
+
+#debug-panel h4 { margin: 0 0 5px 0; color: #444; font-size: 1.1em; text-transform: uppercase; border-bottom: 1px solid #222; padding-bottom: 2px; }
+#debug_pre { color: var(--terminal-green); font-family: 'Consolas', 'Monaco', monospace; font-size: 0.8em; white-space: pre-wrap; margin: 0; line-height: 1.3em; }
+
+/* BUTTONS (General) */
 .btn-action { width: 100%; padding: 15px; background: var(--teal); color: #000; font-weight: bold; border: none; border-radius: 4px; cursor: pointer; margin-top: 10px; text-transform: uppercase; }
 .btn-action:disabled { background: #333; color: #666; cursor: not-allowed; }
-.btn-secondary, .btn-radical { background: #333; color: #ccc; border: 1px solid #555; padding: 0 12px; height: 32px; cursor: pointer; border-radius: 4px; font-weight: bold; font-size: 0.75em; display: flex; align-items: center; justify-content: center; }
-.btn-radical.active { background: var(--pink); color: white; border-color: var(--pink); }
-.btn-render-small { background: var(--teal); color: black; border: none; padding: 0 12px; height: 32px; cursor: pointer; border-radius: 4px; font-weight: bold; min-width: 80px; }
-.btn-render-small.waiting { background: var(--warn); animation: pulse-orange 1.5s infinite; }
-.btn-render-small.processing { background: var(--pink); color: white; animation: pulse-pink 1.5s infinite; }
-.btn-info { width: 32px; height: 32px; border-radius: 50%; background: #333; border: 1px solid #555; color: var(--teal); font-weight: bold; display: flex; align-items: center; justify-content: center; cursor: pointer; font-family: serif; font-style: italic; }
+.btn-secondary { background: #333; color: #ccc; border: 1px solid #555; padding: 0 12px; height: 32px; cursor: pointer; border-radius: 4px; font-weight: bold; font-size: 0.75em; }
 
 /* STAGE & RULER */
 .lightbox-wrapper { 
-    flex: 1; 
-    display: flex; flex-direction: column; align-items: center; justify-content: center; 
-    background: #000; 
-    overflow: hidden; 
-    position: relative; 
-    min-height: 60vh; 
+    flex: 1; display: flex; flex-direction: column; align-items: center; justify-content: center; 
+    background: #000; overflow: hidden; position: relative; min-height: 60vh; 
 }
 .stage-container { 
-    position: relative; 
-    display: flex; justify-content: center; align-items: center; 
-    width: 100%; height: 100%; 
-    overflow: visible; 
-    padding-top: 25px;
+    position: relative; display: flex; justify-content: center; align-items: center; 
+    width: 100%; height: 100%; overflow: visible; padding-top: 25px;
 }
-
-#preview_img {
-    max-width: 95%; 
-    max-height: 98%; 
-    min-width: 50px; 
-    object-fit: contain; 
-    z-index: 1; 
-    flex-shrink: 0; 
+#preview_img, #canvas_main { 
+    max-width: 95%; max-height: 98%; min-width: 50px; object-fit: contain; z-index: 1; flex-shrink: 0; display: block;
 }
-
 #timeline-ruler {
-    position: absolute; 
-    top: 0; left: 0; 
-    height: 20px; 
-    border-top: 2px solid var(--pink); 
-    display: none; 
-    justify-content: space-between; 
-    align-items: flex-start; 
-    z-index: 20; 
-    pointer-events: none;
-    margin-top: -24px; 
+    position: absolute; top: 0; left: 0; height: 20px; border-top: 2px solid var(--pink); 
+    display: none; justify-content: space-between; align-items: flex-start; z-index: 20; pointer-events: none; margin-top: -24px; 
 }
 .ruler-tick { width: 2px; height: 8px; background: var(--pink); }
 .ruler-label { color: var(--teal); font-family: monospace; font-size: 0.9em; font-weight: bold; margin-top: 4px; text-shadow: -1px -1px 0 #000; }
-
 #crop-lens { position: absolute; border: 2px solid var(--pink); box-shadow: 0 0 0 9999px rgba(0, 0, 0, 0.85); display: none; z-index: 30; cursor: grab; }
-
-/* FIX: Z-Index increased to 60 to sit above overlay (50) */
 #debounce-timer { position: absolute; bottom: 10px; right: 10px; color: var(--teal); font-family: monospace; font-size: 1.5em; background: rgba(0,0,0,0.7); padding: 5px; display: none; z-index: 60; }
 
 /* CONTROLS */
 .editor-controls { flex: 1; max-height: 45dvh; background: #111; border-top: 1px solid #333; overflow-y: auto; padding-bottom: 40px; transition: opacity 0.3s; }
-
-.editor-controls.interface-locked {
-    pointer-events: none;
-    opacity: 0.5;
-    filter: grayscale(100%);
-}
-
+.editor-controls.interface-locked { pointer-events: none; opacity: 0.5; filter: grayscale(100%); }
 .control-row { display: flex; gap: 10px; margin-bottom: 12px; align-items: center; padding: 0 15px; }
 .control-row label { color: var(--teal); font-size: 0.7em; width: 80px; text-align: right; text-transform: uppercase; font-weight: bold; }
 .coord-val { color: #fff; font-size: 0.8em; min-width: 40px; text-align: left; }
-
 input[type=range] { flex: 1; accent-color: var(--teal); cursor: pointer; height: 2px; background: #333; }
 input[type=range].radical-active { accent-color: var(--pink) !important; }
-
-/* Disabled State for Fit Mode */
 .control-row.disabled { opacity: 0.2; pointer-events: none; filter: grayscale(100%); }
-
-.pixel-display { font-family: monospace; color: var(--teal); font-size: 1.2em; margin-right: 10px; }
-.pixel-display.danger { color: var(--pink); }
-
 .mini-group { display: flex; gap: 4px; flex: 1; }
 .mini-btn { flex: 1; background: #1a1a1a; border: 1px solid var(--teal); color: var(--teal); padding: 8px 2px; font-size: 0.65em; cursor: pointer; border-radius: 4px; font-weight: bold; text-align: center; }
-
-.mini-btn.active, 
-.control-row .mini-group .mini-btn.active,
-#grp_depth .mini-btn.active,
-#grp_burst .mini-btn.active,
-#grp_gap .mini-btn.active { 
-    background: var(--pink) !important; 
-    color: white !important; 
-    border-color: var(--pink) !important; 
+.mini-btn.active, .control-row .mini-group .mini-btn.active, #grp_depth .mini-btn.active, #grp_burst .mini-btn.active, #grp_gap .mini-btn.active { 
+    background: var(--pink) !important; color: white !important; border-color: var(--pink) !important; 
 }
-
-/* ACCORDIONS */
 details { width: 100%; border-bottom: 1px solid #333; }
 summary { background: #1a1a1a; color: #ccc; padding: 6px 15px; cursor: pointer; font-size: 0.8em; font-weight: bold; text-transform: uppercase; list-style: none; display: flex; justify-content: space-between; align-items: center; }
 summary:after { content: "+"; color: var(--pink); font-size: 1.2em; }
 details[open] summary { background: #222; color: #fff; }
 details[open] summary:after { content: "-"; color: var(--teal); }
 .control-group { padding: 20px 15px; background: #0d0d0d; }
-
-/* MODAL */
 .modal-backdrop { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.85); z-index: 1000; display: flex; align-items: center; justify-content: center; }
 .modal-content { background: #111; border: 1px solid #333; padding: 20px; width: 400px; max-width: 90%; text-align: center; box-shadow: 0 0 30px #000; color: #ccc; font-size: 0.9em; }
 .modal-title { color: var(--teal); border-bottom: 1px solid #333; padding-bottom: 10px; margin-bottom: 15px; font-weight: bold; letter-spacing: 2px; }
@@ -200,4 +268,4 @@ details[open] summary:after { content: "-"; color: var(--teal); }
 
 @keyframes pulse-orange { 0% { box-shadow: 0 0 2px var(--warn); } 50% { box-shadow: 0 0 10px var(--warn); } 100% { box-shadow: 0 0 2px var(--warn); } }
 @keyframes pulse-pink { 0% { box-shadow: 0 0 2px var(--pink); } 50% { box-shadow: 0 0 10px var(--pink); } 100% { box-shadow: 0 0 2px var(--pink); } }
-/* END OF DOCUMENT - css/styles.css */
+/* END OF DOCUMENT css/styles.css [20251226-1855] */
