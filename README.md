@@ -1,128 +1,107 @@
-# BAALSAMIC V20 (Time Travel Engine)
+# BAALSAMIC v22.16
+### The Failure Engine
 
-**Current Version:** V20.10 (Stable Release Candidate)
-
-**Date:** December 2025
-
-Baalsamic is a video-to-static "Time Travel" engine. It deconstructs video files into temporal slices ("stitches") and reconstructs them into a single panoramic timeline. V20 introduces a **Dual Physics** architecture, handling both spatial construction and temporal division, along with advanced entropy controls like Z-Jitter rotation and depth sorting.
-
----
-
-## 🚀 Key Features (V20.10)
-
-### 1. Dual Physics Engine
-
-The system operates in two distinct geometric modes:
-
-* **FIT MODE ("The Bricklayer"):** You define the **Stitch Width**. The engine adds stitches until the count is reached.
-* *Result:* The image grows wider as you add stitches.
-
-
-* **FOCUS MODE ("The Slicer"):** You define the **Image Width**. The engine calculates the necessary stitch width to fit the count within that space.
-* *Result:* The image size stays fixed; stitches get thinner (higher resolution) as you add them.
-
-
-
-### 2. Advanced Entropy (Jitter)
-
-* **X/Y Jitter:** Randomizes the source selection coordinates (simulating a shaky camera).
-* **Z-Jitter (Rotation):** Applies random affine rotation to each stitch.
-* **Organic Mode:** Max rotation ±8° (Natural vibration).
-* **!RAD Mode:** Max rotation ±45° (Shattered/Diamond effect).
-
-
-
-### 3. Depth Sorting & Alpha Blending
-
-* **Depth Control:** Determines the Z-Index stacking order of overlapping stitches (`L>R`, `R>L`, or `MIX`).
-* **Alpha Blending:** Rotated stitches are rendered with transparency, allowing corners to overlap neighbors non-destructively.
+**Current Version:** v22.16 (The Pivot Update)  
+**Release Date:** January 11, 2026  
+**Status:** Interface Frozen / Backend Integration Phase
 
 ---
 
-## 🛠 Installation & Setup
+## 📖 Overview
+
+**Baalsamic** is a slit-scan and time-displacement engine designed to simulate the aesthetic decay of early digital video. Unlike standard glitch tools that apply filters *over* an image, Baalsamic deconstructs the video into vertical temporal slices ("stitches") and reassembles them with deliberate geometric and chemical errors.
+
+We call this **"The Failure Engine"**—a system built to emulate specific hardware sensor malfunctions (drift, heat noise) and software processing artifacts (smoothing, crunch).
+
+---
+
+## 🏗 Architecture: The "Hub-and-Spoke" Pivot
+
+As of **v22.16**, Baalsamic has moved away from a linear wizard workflow (Screen 1 → 2 → 3) to a unified **Hub-and-Spoke** architecture.
+
+### 1. Ingest (The Hub)
+The entry point for loading video assets. Handles file upload, FPS sampling selection, and session initialization.
+
+### 2. Time Travel Workspace (The Spoke)
+A single, modal interface that toggles between two distinct processing modes:
+
+* **teal // TUNER (Time):**
+    * *Focus:* The "Container."
+    * *Controls:* Slicing, Temporal Indexing, Span Duration, and Jitter.
+    * *Goal:* Define *when* and *where* the frames are extracted.
+
+* **pink // DARK ROOM (Physics):**
+    * *Focus:* The "Content."
+    * *Controls:* Sensor Drift, Thermal Noise, Lens Flare, and Texture Processing.
+    * *Goal:* degrade and process the pixels *within* the slices.
+
+---
+
+## 🛠 Features & Controls
+
+### 🧠 MEMORY (Timeline Logic)
+* **Index & Span:** Precise control over the temporal window (center point vs. duration).
+* **Fit vs. Focus:** Toggle between mapping the entire video duration (Fit) or a manual selection (Focus).
+* **Burst:** (Backlog) Algorithms for frame distribution (Soft/Med/Hard).
+
+### 📐 GEOMETRY (Spatial Logic)
+* **Unified Width:** Input the target **Total Image Width** (e.g., 2400px), and the engine automatically calculates slice geometry.
+* **Drift:** Pan content horizontally within the stitch (Sensor Readout Error).
+* **Wave:** Vertical sine distortion (Rolling Shutter simulation).
+* **Gap Fill:** Logic for handling empty pixels caused by jitter (`Void` | `Black` | `Stretch`).
+
+### 🧪 ATMOSPHERE (Sensor Decay)
+* **Heat:** Simulates "HTC Purple Noise" (thermal sensor failure in low light).
+* **Flicker:** Exposure clashing between adjacent stitches.
+* **Flare:** Highlight blowout thresholds.
+
+### 📜 TEXTURE (Processing Artifacts)
+* **Smooth:** Aggressive bilateral blur (Early smartphone "Oil Painting" effect).
+* **Crunch:** Over-sharpening halos.
+* **Louver:** Quantization banding ("Ribbed Sky" effect).
+
+---
+
+## 🚀 Installation & Setup
 
 ### Prerequisites
+* Python 3.9+
+* FFmpeg (installed and added to system PATH)
 
-* Python 3.8+
-* Git
+### Quick Start
+1.  **Clone the Repository:**
+    ```bash
+    git clone [https://github.com/mfgink/baalsamic.git](https://github.com/mfgink/baalsamic.git)
+    cd baalsamic
+    ```
 
-### 1. Clone & Setup
+2.  **Install Dependencies:**
+    ```bash
+    pip install -r requirements.txt
+    ```
 
-```bash
-# Clone the repository
-git clone <your-repo-url>
-cd baalsamic-v20
+3.  **Run the Server:**
+    ```bash
+    python server.py
+    ```
 
-# Create Virtual Environment
-python -m venv venv
-
-# Activate Environment (Windows PowerShell)
-.\venv\Scripts\Activate.ps1
-
-# Install Dependencies
-pip install flask opencv-python numpy
-
-```
-
-### 2. Configuration
-
-Ensure you have a `.gitignore` file to prevent large video uploads from bloating the repository:
-
-```text
-# .gitignore
-uploads/
-__pycache__/
-venv/
-*.mp4
-*.jpg
-
-```
+4.  **Launch:**
+    Open `http://localhost:5000` in your browser.
 
 ---
 
-## 🖥 Usage
+## 🗺 Roadmap & Known Issues (v22.16)
 
-### 1. Run the Server
+### 🐛 Critical Bugs
+* **Dead Space Render:** Rounding errors in slice width calculation occasionally produce black/transparent gaps on the right edge of the image.
+* **UI Artifacts:** Pink `<hr>` lines appear in the preview area when switching to Dark Room mode.
 
-```bash
-cd python
-python main.py
-
-```
-
-Access the interface at `http://127.0.0.1:5000`.
-
-### 2. The Workflow
-
-1. **Ingest:** Upload a video file (.mp4, .mov). The system extracts metadata (FPS, Duration, Dimensions).
-2. **Tuning (The Time Travel Screen):**
-* **Memory (Time):** Set the `Index` (Anchor Point) and `Span` (Duration).
-* **Geometry (Space):** Choose Fit vs. Focus mode. Adjust Stitch Count.
-* **Rhythm:** Control `Burst` (recording duration) and `Gap` (silence between stitches).
-* **Jitters:** Apply X, Y, and Z chaos.
-
-
-3. **Render:** Click **RENDER** to process the image on the backend.
-4. **Export:** Click the Render button again (when idle) to save the PNG.
+### 🚧 Active Development (Next Steps)
+1.  **Backend Integration:** Wiring the new Dark Room JSON parameters (`drift`, `heat`, `louver`) to the Python processing engine.
+2.  **Cache Management:** Implementing a "Smart Reset" policy to flush video/image caches effectively.
+3.  **Schema Unification:** Merging "Stitch Map" and "Recipe" into a single portable JSON format.
 
 ---
 
-## 📐 Logic & Constraints
-
-| Parameter | Behavior |
-| --- | --- |
-| **Index** | The center point of your timeline window. |
-| **Span** | The total duration captured. If `Span < (Count * Burst)`, rendering clamps to available time. |
-| **!RAD Mode** | Unlocks extreme parameters: Z-Jitter up to 45°, X/Y Jitter up to 200px. |
-| **Overlay** | A teal-to-pink pulse indicates the backend is processing a frame. |
-
----
-
-## 📝 Backlog & Known Issues
-
-* **Smear V2 (Deferred to V21):** The current "Smear" (Blur) function is deprecated. Future versions will implement "Seam Healing" (Mesh Stretch) to fill black voids created by high Z-Jitter rotation.
-* **Mobile Support:** Touch events for the crop lens need validation on mobile devices.
-
----
-
-**End of Documentation**
+## 📄 License
+MIT License. See `LICENSE` for details.
