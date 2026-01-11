@@ -1,11 +1,11 @@
-// v21.14.0 - js/main.js
+// v22.16 - js/main.js
 /*
     BAALSAMIC BOOTLOADER
-    Responsibility: Initialize Engines and Handle Startup Errors
+    Responsibility: Initialize Engines, Handle Startup Errors, and Wire Global Events
 */
 
 document.addEventListener('DOMContentLoaded', () => {
-    console.log("BOOT: Baalsamic V21.14 Main Loader Starting...");
+    console.log("BOOT: Baalsamic V22.16 Main Loader Starting...");
     
     // 1. Check for Workflow Engine (The Logic)
     if (window.Workflow) {
@@ -17,7 +17,7 @@ document.addEventListener('DOMContentLoaded', () => {
                 console.log("BOOT: Workflow Initialized Successfully.");
             } else {
                 console.error("BOOT CRASH: 'init' is missing from Workflow object.");
-                console.dir(window.Workflow); // Dump object for inspection
+                console.dir(window.Workflow); 
                 alert("System Error: Workflow Engine is loaded but corrupt (Missing Init).");
             }
         } catch (e) {
@@ -36,5 +36,21 @@ document.addEventListener('DOMContentLoaded', () => {
     } else {
         console.warn("BOOT: Artist Engine not found (Darkroom may be disabled).");
     }
+
+    // 3. Global Event Wiring (v22.16 Fixes)
+    // Wire the custom "LOAD VIDEO" button to the hidden file input
+    const uploadBtn = document.getElementById('btn_ingest');
+    const fileInput = document.getElementById('upload');
+    
+    if (uploadBtn && fileInput) {
+        uploadBtn.addEventListener('click', (e) => {
+            // Only trigger file picker if the button is in its initial 'LOAD' state.
+            // (Workflow.js manages the button once a file is loaded)
+            if (!uploadBtn.disabled && uploadBtn.innerText.includes("LOAD")) {
+                fileInput.click();
+            }
+        });
+        console.log("BOOT: Ingest Button Wired.");
+    }
 });
-// END OF DOCUMENT - js/main.js [20251225-2315]
+// END OF DOCUMENT - js/main.js [20260110 2200]

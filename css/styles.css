@@ -1,4 +1,4 @@
-/* v21.22.3 - css/styles.css */
+/* v22.12 - css/styles.css */
 :root {
     --bg-dark: #0f0f0f;
     --bg-panel: #1a1a1a;
@@ -73,9 +73,9 @@ body {
 @keyframes spin { 0% { transform: rotate(0deg); } 100% { transform: rotate(360deg); } }
 
 
-/* HEADER (Revised for Screen 1) */
+/* HEADER */
 .tuner-header {
-    height: 70px; /* Slightly taller for the new deck */
+    height: 70px; 
     flex-shrink: 0; 
     background: #0d0d0d; 
     border-bottom: 1px solid #333;
@@ -84,15 +84,16 @@ body {
     align-items: center; 
     padding: 0 15px; 
     z-index: 10;
+    transition: border-color 0.3s;
 }
 
-/* --- BPM / PIXEL DISPLAY (The LCD) --- */
+/* --- BPM / PIXEL DISPLAY --- */
 .bpm-display {
     background: var(--lcd-bg);
     border: 1px solid #333;
     border-radius: 4px;
     padding: 5px 10px;
-    font-family: 'Courier New', Courier, monospace; /* Digital look */
+    font-family: 'Courier New', Courier, monospace; 
     font-weight: bold;
     font-size: 1.2em;
     color: var(--teal);
@@ -110,7 +111,7 @@ body {
     text-shadow: 0 0 3px var(--pink);
 }
 
-/* --- CONTROL DECK (Screen 2 Header) --- */
+/* --- CONTROL DECK --- */
 .control-deck {
     display: flex;
     gap: 20px;
@@ -119,7 +120,7 @@ body {
 
 .utility-cluster, .transport-cluster {
     display: flex;
-    gap: 6px;
+    gap: 8px;
     align-items: center;
 }
 
@@ -128,8 +129,8 @@ body {
     border-left: 1px solid #333;
 }
 
-/* Icon Buttons (Utility) */
-.btn-icon {
+/* Icon Buttons */
+.btn-icon, .icon-btn {
     width: 36px; height: 36px;
     background: #1a1a1a;
     border: 1px solid #333;
@@ -139,16 +140,21 @@ body {
     cursor: pointer;
     display: flex; align-items: center; justify-content: center;
     transition: all 0.2s;
+    position: relative;
 }
-.btn-icon:hover { background: #222; color: #fff; border-color: #555; }
-.btn-icon:active { transform: translateY(1px); }
+.btn-icon:hover, .icon-btn:hover { background: #222; color: #fff; border-color: #555; }
+.btn-icon:active, .icon-btn:active { transform: translateY(1px); }
 
-/* Lock State */
+/* Lock State - Only colored when locked */
 .btn-icon.locked {
     color: var(--teal);
     border-color: var(--teal);
     box-shadow: inset 0 0 5px rgba(0,255,204,0.2);
 }
+
+/* Danger / Stop State */
+.icon-btn.danger { color: var(--pink); border-color: var(--pink); }
+.icon-btn.danger:hover { background: rgba(255,0,85,0.1); }
 
 /* Rad State */
 .btn-icon.radical-active {
@@ -158,20 +164,19 @@ body {
     background: #200;
 }
 
-/* Transport Buttons (The Big Ones) */
+/* Transport Buttons (Icons) */
 .btn-transport {
     width: 44px; height: 36px;
     background: transparent; 
     border: 1px solid transparent; 
     border-radius: 4px;
     color: #ccc;
-    font-size: 1.0em;
+    font-size: 1.2em;
     cursor: pointer;
     display: flex; align-items: center; justify-content: center;
     transition: all 0.2s;
 }
 
-/* Unified Hover State - Teal */
 .btn-transport:hover { 
     border-color: var(--teal); 
     color: var(--teal);
@@ -179,8 +184,100 @@ body {
     box-shadow: 0 0 10px rgba(0,255,204,0.2); 
 }
 
-.btn-transport.play { font-size: 1.2em; }
-.btn-transport.finish { font-size: 1.2em; }
+/* Text Buttons (MAP / IMG) */
+.btn-text {
+    height: 36px;
+    padding: 0 10px;
+    background: transparent;
+    border: 1px solid #333;
+    border-radius: 4px;
+    color: #888;
+    font-family: monospace;
+    font-size: 0.85em;
+    font-weight: bold;
+    cursor: pointer;
+    transition: all 0.2s;
+    display: flex; align-items: center; justify-content: center;
+}
+.btn-text:hover {
+    border-color: var(--teal);
+    color: var(--teal);
+    background: rgba(0, 255, 204, 0.05);
+}
+
+/* Mode Switch (Tuner/Darkroom) */
+.mode-switch {
+    display: flex;
+    height: 36px;
+    background: #000;
+    border: 1px solid #333;
+    border-radius: 4px;
+    padding: 2px;
+    margin-left: 10px;
+}
+.mode-opt {
+    flex: 1;
+    height: 100%;
+    background: transparent;
+    border: none;
+    color: #666;
+    padding: 0 12px;
+    font-family: monospace;
+    font-size: 0.8em;
+    cursor: pointer;
+    border-radius: 2px;
+    transition: all 0.2s;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+.mode-opt:hover { color: #aaa; }
+
+/* TOGGLE LOGIC: Parent class determines active button */
+#mode-btn-tuner {
+    background: var(--teal);
+    color: #000;
+    font-weight: bold;
+    box-shadow: 0 0 5px rgba(0,255,204,0.4);
+}
+#mode-btn-dr {
+    background: transparent;
+    color: #888;
+}
+
+/* Darkroom State Overrides */
+#screen-time-travel.mode-darkroom #mode-btn-tuner {
+    background: transparent;
+    color: #888;
+    font-weight: normal;
+    box-shadow: none;
+}
+#screen-time-travel.mode-darkroom #mode-btn-dr {
+    background: var(--teal); 
+    color: #000;
+    font-weight: bold;
+    box-shadow: 0 0 5px rgba(0,255,204,0.4);
+}
+
+/* Darkroom Mode Global Overrides */
+#screen-time-travel.mode-darkroom .tuner-header {
+    border-bottom-color: var(--pink);
+    box-shadow: 0 5px 20px rgba(255, 0, 85, 0.1);
+}
+#screen-time-travel.mode-darkroom h1 {
+    color: var(--text-main);
+    text-shadow: 0 0 5px var(--pink);
+}
+/* Hide Editor & Rulers */
+#screen-time-travel.mode-darkroom .editor-controls,
+#screen-time-travel.mode-darkroom #timeline-ruler,
+#screen-time-travel.mode-darkroom #crop-lens {
+    display: none !important;
+}
+/* Show Darkroom Panel */
+#screen-time-travel.mode-darkroom .darkroom-controls {
+    display: flex;
+}
 
 
 /* INGEST STYLES */
@@ -228,7 +325,7 @@ body {
     position: relative; display: flex; justify-content: center; align-items: center; 
     width: 100%; height: 100%; overflow: visible; padding-top: 25px;
 }
-#preview_img, #canvas_main { 
+#preview_img, #canvas_main, .result-image { 
     max-width: 95%; max-height: 98%; min-width: 50px; object-fit: contain; z-index: 1; flex-shrink: 0; display: block;
 }
 #timeline-ruler {
@@ -266,6 +363,26 @@ details[open] summary:after { content: "-"; color: var(--teal); }
 .modal-actions { display: flex; gap: 10px; margin-top: 20px; }
 .close-modal { margin-top: 15px; color: #666; cursor: pointer; text-decoration: underline; }
 
+/* DARKROOM MODE (Fixed Layout v22.12) */
+.darkroom-controls {
+    flex: 1;
+    background: #050505;
+    border-top: 1px solid var(--pink);
+    display: none; 
+    flex-direction: column;
+    /* justify-content: center; <--- REMOVED to allow scrolling */
+    justify-content: flex-start; /* Align content to top */
+    align-items: center;
+    overflow-y: auto; /* Enable vertical scroll */
+    width: 100%; /* Ensure width */
+    animation: slideUp 0.3s ease-out;
+}
+
+@keyframes slideUp {
+    from { transform: translateY(20px); opacity: 0; }
+    to { transform: translateY(0); opacity: 1; }
+}
+
 @keyframes pulse-orange { 0% { box-shadow: 0 0 2px var(--warn); } 50% { box-shadow: 0 0 10px var(--warn); } 100% { box-shadow: 0 0 2px var(--warn); } }
 @keyframes pulse-pink { 0% { box-shadow: 0 0 2px var(--pink); } 50% { box-shadow: 0 0 10px var(--pink); } 100% { box-shadow: 0 0 2px var(--pink); } }
-/* END OF DOCUMENT css/styles.css [20251226-1855] */
+/* END OF DOCUMENT css/styles.css [20260111 1330] */

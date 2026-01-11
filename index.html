@@ -3,45 +3,52 @@
 <head>
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,user-scalable=no" />
-    <title>Baalsamic V21: Failure Engine</title>
-    <link rel="stylesheet" href="css/styles.css?v=21.22">
+    <title>Baalsamic V22.16</title>
+    <link rel="stylesheet" href="css/styles.css?v=22.12">
 </head>
 <body>
 
     <div id="info-modal" class="modal-backdrop" style="display:none;" onclick="document.getElementById('info-modal').style.display='none'">
         <div class="modal-content" onclick="event.stopPropagation()">
             <div class="modal-title">SYSTEM MEMO</div>
-            <div style="text-align:left; font-size: 0.8em; line-height: 1.4em;">
-                <p><strong>THE MEMORY (Timeline)</strong><br>
-                Index: Center point of time.<br>
-                Span: Duration of the capture.</p>
+            <div style="text-align:left; font-size: 0.8em; line-height: 1.4em; max-height: 400px; overflow-y: auto;">
+                <p style="color:var(--teal); font-weight:bold; margin-bottom:5px;">--- TIME TRAVEL (TUNER) ---</p>
+                
+                <p><strong>MEMORY (Time)</strong><br>
+                Index: Center point of timeline.<br>
+                Span: Duration of capture.</p>
                 <br>
-                <p><strong>THE GEOMETRY (Space)</strong><br>
-                Stitches: Number of slices.<br>
-                Width: Thickness of slice.</p>
+                <p><strong>GEOMETRY (Space)</strong><br>
+                Stitches: Vertical slice count.<br>
+                Image PX: Total output width.</p>
                 <br>
-                <p><strong>THE ENTROPY (Chaos)</strong><br>
-                Jitter: Random displacement.<br>
-                Radical Mode: Unlocks extreme physics.</p>
+                <p><strong>ENTROPY (Chaos)</strong><br>
+                Jitter: Random stitch displacement.</p>
+                <br>
+                
+                <p style="color:var(--pink); font-weight:bold; margin-bottom:5px; margin-top:15px;">--- DARK ROOM (DEVELOPER) ---</p>
+                
+                <p><strong>GEOMETRY (Drift)</strong><br>
+                Drift: Pan content within stitch.<br>
+                Wave: Vertical sine distortion.<br>
+                Gap Fill: Handle empty space (Void/Black/Stretch).</p>
+                <br>
+                <p><strong>ATMOSPHERE (Sensor Decay)</strong><br>
+                Heat: Thermal noise & magenta tint.<br>
+                Flare: Highlight blowout threshold.<br>
+                Flicker: Exposure clashing.</p>
+                <br>
+                <p><strong>TEXTURE (Processing)</strong><br>
+                Smooth: Aggressive noise reduction.<br>
+                Crunch: Over-sharpening halos.<br>
+                Louver: Quantization banding.</p>
             </div>
             <div class="close-modal" onclick="document.getElementById('info-modal').style.display='none'">CLOSE</div>
         </div>
     </div>
 
-    <div id="develop-modal" class="modal-backdrop" style="display:none;">
-        <div class="modal-content">
-            <div class="modal-title">DEVELOP MEMORY</div>
-            <div class="modal-item">Proceed to the Darkroom to apply physical failures?</div>
-            <div class="modal-actions">
-                <button class="btn-secondary" onclick="Workflow.exportRawStrip()">EXPORT RAW (PNG)</button>
-                <button class="btn-action" onclick="Workflow.goToDarkroom()">DEVELOP & FIX</button>
-            </div>
-            <div class="close-modal" onclick="document.getElementById('develop-modal').style.display='none'">CANCEL</div>
-        </div>
-    </div>
-
     <div id="screen-ingest" class="container">
-        <h1>BAALSAMIC V21</h1>
+        <h1>BAALSAMIC V22.16</h1>
         
         <div class="upload-container">
             <input type="file" id="upload" accept="video/*">
@@ -71,33 +78,34 @@
         </div>
         
         <div class="dev-section">
-            <div id="debug-panel"><h4>KERNEL LOG</h4><pre id="debug_pre">Initializing V21 Interface...</pre></div>
+            <div id="debug-panel"><h4>KERNEL LOG</h4><pre id="debug_pre">Initializing V22.16 Interface...</pre></div>
         </div>
     </div>
 
     <div id="screen-time-travel" style="display:none;">
         <div class="tuner-header">
             
-            <h1 style="font-size: 1.2em; margin:0; color:#666;">TIME TRAVEL</h1>
-
-            <div class="control-deck">
-                
-                <div class="utility-cluster">
-                    <div id="bpm-display" class="bpm-display">0 PX</div>
-                    
-                    <button class="btn-icon" onclick="Workflow.resetParams()" title="Reset">⟲</button>
-                    <button class="btn-icon" id="btn_lock" onclick="Workflow.toggleLock()" title="Lock Interface">🔒</button>
-                    <button class="btn-icon" onclick="document.getElementById('info-modal').style.display='flex'" title="Info">ℹ</button>
-                    <button class="btn-icon" id="btn_radical" onclick="Workflow.toggleRadicalMode()" title="Radical Mode">☢</button>
-                </div>
-
-                <div class="transport-cluster">
-                    <button class="btn-transport" onclick="Workflow.goToIngest()" title="Back">|&lt;&lt;</button>
-                    <button class="btn-transport play" id="btn_play" onclick="Workflow.exportRawStrip()" title="Download">⭳</button>
-                    <button class="btn-transport finish" onclick="Workflow.expressToDarkroom()" title="Finish & Export">&gt;&gt;|</button>
-                </div>
-
+            <div class="utility-cluster">
+                <button class="btn-icon" onclick="document.getElementById('info-modal').style.display='flex'" title="Info">ℹ</button>
+                <div id="bpm-display" class="bpm-display">0 PX</div>
+                <button class="btn-icon" id="btn_lock" onclick="Workflow.toggleLock()" title="Lock Interface">🔒</button>
+                <button class="btn-icon" id="btn_radical" onclick="Workflow.toggleRadicalMode()" title="Radical Mode">☢</button>
             </div>
+
+            <h1 id="header_title" style="font-size: 1.2em; margin:0; color:#666;">TIME TRAVEL</h1>
+
+            <div class="transport-cluster">
+                <button class="btn-transport" onclick="Workflow.goToIngest()" title="Change Video">⏏</button>
+                
+                <button class="btn-text" onclick="Workflow.exportStitchMap()" title="Download JSON Map">MAP</button>
+                <button class="btn-text" onclick="Workflow.exportRawStrip()" title="Download PNG Image">IMG</button>
+                
+                <div class="mode-switch">
+                    <button id="mode-btn-tuner" class="mode-opt" onclick="Workflow.exitDarkroomMode()">TUNER</button>
+                    <button id="mode-btn-dr" class="mode-opt" onclick="Workflow.enterDarkroomMode()">DARKROOM</button>
+                </div>
+            </div>
+
         </div>
         
         <div class="lightbox-wrapper">
@@ -130,6 +138,7 @@
                                 <button class="mini-btn" data-val="focus" onclick="Workflow.setParam('anchor', 'focus')">FOCUS</button>
                             </div>
                         </div>
+                        
                         <div class="control-row" id="row_index">
                             <label>INDEX</label> 
                             <input type="range" id="input_index" min="0" max="100" value="50" oninput="Workflow.updateCoords()">
@@ -140,33 +149,18 @@
                             <input type="range" id="input_span" min="0" max="100" value="20" oninput="Workflow.updateCoords()">
                             <span id="val_span" class="coord-val">20%</span>
                         </div>
-                    </div>
-                </details>
 
-                <details open>
-                    <summary>GEOMETRY (THE CUT)</summary>
-                    <div class="control-group">
                         <div class="control-row">
                             <label>STITCH CT</label>
-                            <input type="range" id="input_count" min="5" max="60" value="50" oninput="Workflow.updateCoords()">
-                            <span id="val_cnt" class="coord-val">50</span>
+                            <input type="range" id="input_count" min="5" max="60" value="6" oninput="Workflow.updateCoords()">
+                            <span id="val_cnt" class="coord-val">6</span>
                         </div>
-                        <div class="control-row" id="row_stitch_width">
-                            <label>STITCH PX</label> 
-                            <input type="range" id="input_width" min="1" max="500" value="20" oninput="Workflow.updateCoords()">
-                            <span id="val_wid" class="coord-val">20</span>
-                        </div>
-                        <div class="control-row" id="row_image_width" style="display:none;">
+                        <div class="control-row">
                             <label>IMAGE PX</label> 
-                            <input type="range" id="input_image_width" min="100" max="3800" value="1200" oninput="Workflow.updateCoords()">
-                            <span id="val_img_wid" class="coord-val">1200</span>
+                            <input type="range" id="input_image_width" min="100" max="3800" value="2400" oninput="Workflow.updateCoords()">
+                            <span id="val_img_wid" class="coord-val">2400</span>
                         </div>
-                    </div>
-                </details>
-                
-                <details>
-                    <summary>ENTROPY (THE CHAOS)</summary>
-                    <div class="control-group">
+
                         <div class="control-row">
                             <label>BURST</label>
                             <div class="mini-group" id="grp_burst">
@@ -175,13 +169,12 @@
                                 <button class="mini-btn" data-val="hard" onclick="Workflow.setParam('burst', 'hard')">HARD</button>
                             </div>
                         </div>
-                        <div class="control-row">
-                            <label>GAP</label>
-                            <div class="mini-group" id="grp_gap">
-                                <button class="mini-btn active" data-val="close" onclick="Workflow.setParam('gap', 'close')">CLOSE</button>
-                                <button class="mini-btn" data-val="far" onclick="Workflow.setParam('gap', 'far')">FAR</button>
-                            </div>
-                        </div>
+                    </div>
+                </details>
+                
+                <details open>
+                    <summary>ENTROPY (THE CHAOS)</summary>
+                    <div class="control-group">
                         <div class="control-row">
                             <label>X JIT</label>
                             <input type="range" id="input_xjitter" min="0" max="100" value="10" oninput="Workflow.updateCoords()">
@@ -227,21 +220,88 @@
                 </details>
             </div>
         </div>
+        
+        <div class="darkroom-controls">
+            <div class="controls-scroll" style="width:100%;">
+                
+                <details open>
+                    <summary>GEOMETRY (CONTENT DRIFT)</summary>
+                    <div class="control-group">
+                        <div class="control-row">
+                            <label>DRIFT</label>
+                            <input type="range" id="dr_drift" min="-100" max="100" value="0" oninput="Workflow.setDarkroomParam('drift', this.value)">
+                            <span id="val_dr_drift" class="coord-val">0</span>
+                        </div>
+                        <div class="control-row">
+                            <label>WAVE</label>
+                            <input type="range" id="dr_wave" min="0" max="100" value="0" oninput="Workflow.setDarkroomParam('wave', this.value)">
+                            <span id="val_dr_wave" class="coord-val">0</span>
+                        </div>
+                        <div class="control-row">
+                            <label>STRETCH</label>
+                            <input type="range" id="dr_stretch" min="0" max="100" value="0" oninput="Workflow.setDarkroomParam('stretch', this.value)">
+                            <span id="val_dr_stretch" class="coord-val">0</span>
+                        </div>
+                        <div class="control-row">
+                            <label>GAP FILL</label>
+                            <div class="mini-group" id="grp_gap_fill">
+                                <button class="mini-btn active" data-val="void" onclick="Workflow.setDarkroomParam('gap_fill', 'void')">VOID</button>
+                                <button class="mini-btn" data-val="black" onclick="Workflow.setDarkroomParam('gap_fill', 'black')">BLACK</button>
+                                <button class="mini-btn" data-val="stretch" onclick="Workflow.setDarkroomParam('gap_fill', 'stretch')">STRETCH</button>
+                            </div>
+                        </div>
+                    </div>
+                </details>
+
+                <details open>
+                    <summary>ATMOSPHERE (SENSOR DECAY)</summary>
+                    <div class="control-group">
+                        <div class="control-row">
+                            <label>HEAT</label>
+                            <input type="range" id="dr_heat" min="0" max="100" value="0" oninput="Workflow.setDarkroomParam('heat', this.value)">
+                            <span id="val_dr_heat" class="coord-val">0</span>
+                        </div>
+                        <div class="control-row">
+                            <label>FLARE</label>
+                            <input type="range" id="dr_flare" min="0" max="100" value="0" oninput="Workflow.setDarkroomParam('flare', this.value)">
+                            <span id="val_dr_flare" class="coord-val">0</span>
+                        </div>
+                        <div class="control-row">
+                            <label>FLICKER</label>
+                            <input type="range" id="dr_flicker" min="0" max="100" value="0" oninput="Workflow.setDarkroomParam('flicker', this.value)">
+                            <span id="val_dr_flicker" class="coord-val">0</span>
+                        </div>
+                    </div>
+                </details>
+
+                <details open>
+                    <summary>TEXTURE (BAD SOFTWARE)</summary>
+                    <div class="control-group">
+                        <div class="control-row">
+                            <label>SMOOTH</label>
+                            <input type="range" id="dr_smooth" min="0" max="100" value="0" oninput="Workflow.setDarkroomParam('smooth', this.value)">
+                            <span id="val_dr_smooth" class="coord-val">0</span>
+                        </div>
+                        <div class="control-row">
+                            <label>CRUNCH</label>
+                            <input type="range" id="dr_crunch" min="0" max="100" value="0" oninput="Workflow.setDarkroomParam('crunch', this.value)">
+                            <span id="val_dr_crunch" class="coord-val">0</span>
+                        </div>
+                        <div class="control-row">
+                            <label>LOUVER</label>
+                            <input type="range" id="dr_louver" min="0" max="100" value="0" oninput="Workflow.setDarkroomParam('louver', this.value)">
+                            <span id="val_dr_louver" class="coord-val">0</span>
+                        </div>
+                    </div>
+                </details>
+
+            </div>
+        </div>
+
     </div>
     
-    <div id="screen-darkroom" class="container" style="display:none;">
-        <div class="tuner-header">
-            <h1 style="font-size: 1.2em; margin:0; color:#666;">DARKROOM</h1>
-            <button class="btn-secondary" onclick="Workflow.backToTimeTravel()">BACK</button>
-        </div>
-        <div class="lightbox-wrapper">
-             <canvas id="canvas_main"></canvas>
-            <div style="margin-top:20px; color:#666; font-size:0.8em;">(Darkroom processing enabled)</div>
-        </div>
-    </div>
-
-    <script src="js/engine/artist.js?v=21.22"></script>
-    <script src="js/ui/workflow.js?v=21.22"></script>
-    <script src="js/main.js?v=21.22"></script> 
+    <script src="js/engine/artist.js?v=21.23"></script>
+    <script src="js/ui/workflow.js?v=22.15"></script>
+    <script src="js/main.js?v=22.8"></script> 
 </body>
 </html>

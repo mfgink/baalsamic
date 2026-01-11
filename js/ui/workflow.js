@@ -1,30 +1,39 @@
-// v21.22.3 - js/ui/workflow.js
+// v22.15 - js/ui/workflow.js
 /*
     WORKFLOW ENGINE
-    - FEATURE: Transport Controls (Download, Finish)
-    - FIX: Slider Labels update immediately
-    - FIX: Darkroom Canvas initialization safety
-    - FIX: Reset button triggers immediate render
+    - FEATURE: Darkroom UI Wiring (State & Events)
+    - UPDATE: Default Accordion Behavior (All Open)
 */
 
-console.log("WORKFLOW: Loading V21.22.3...");
+console.log("WORKFLOW: Loading V22.15...");
 
 window.Workflow = (function() {
     
     // --- STATE ---
     let state = {
+        currentRenderUrl: null, 
+        currentStitchMap: null,
         sourceFilename: null,
         sourcePath: null, 
-        interfaceLocked: true, 
+        interfaceLocked: false, 
         videoMeta: { duration: 0, fps: 30, width: 1920, height: 1080 },
         
+        // Time Travel Params
         params: {
-            count: 15, width: 250, img_width: 1200, 
+            count: 6, 
+            img_width: 2400, 
             index: 50, span: 20,
             xjitter: 10, yjitter: 10, zjitter: 0,
             burst: 'soft', gap: 'close',
             anchor: 'fit', depth: 'ltr',
             res: '720', fps: '15'
+        },
+        
+        // Darkroom Params (New)
+        darkroom: {
+            drift: 0, wave: 0, stretch: 0, gap_fill: 'void',
+            heat: 0, flare: 0, flicker: 0,
+            smooth: 0, crunch: 0, louver: 0
         },
 
         crop: { ratio: 'max', pos: 50 },
@@ -47,7 +56,7 @@ window.Workflow = (function() {
     };
 
     const DEFAULTS = {
-        count: 15, width: 250, img_width: 1200, index: 50, span: 20,
+        count: 6, img_width: 2400, index: 50, span: 20,
         xjitter: 10, yjitter: 10, zjitter: 0
     };
 
@@ -65,7 +74,7 @@ window.Workflow = (function() {
 
     // --- INIT ---
     function init() {
-        logKernel("Initializing V21.22 Interface...");
+        logKernel("Initializing V22.15 Interface...");
         setupListeners();
         
         window.addEventListener('resize', () => {
@@ -76,7 +85,7 @@ window.Workflow = (function() {
         try {
             updateCoords(true); 
             setupLensDrag();
-            toggleLock(true); 
+            toggleLock(false); 
             logKernel("Subsystems Ready.");
         } catch(e) { 
             console.error("BOOT ERROR:", e); 
@@ -190,17 +199,16 @@ window.Workflow = (function() {
         state.params = { ...state.params, ...DEFAULTS };
         const setVal = (id, v) => { const el = document.getElementById(id); if(el) el.value = v; };
         setVal('input_count', DEFAULTS.count);
-        setVal('input_width', DEFAULTS.width);
+        setVal('input_image_width', DEFAULTS.img_width);
         setVal('input_index', DEFAULTS.index);
         setVal('input_span', DEFAULTS.span);
         setVal('input_xjitter', DEFAULTS.xjitter);
         setVal('input_yjitter', DEFAULTS.yjitter);
         setVal('input_zjitter', DEFAULTS.zjitter);
         
-        // Immediate update and render (bypass debounce)
         if(!skipUpdate) {
-            updateCoords(true); // Sync state & labels
-            executeRender(); // Immediate trigger
+            updateCoords(true); 
+            executeRender(); 
         }
     }
 
@@ -211,16 +219,14 @@ window.Workflow = (function() {
             return el ? parseInt(el.value) : def;
         };
 
-        state.params.count = Math.max(3, getVal('input_count', 15));
-        state.params.width = getVal('input_width', 250);
-        state.params.img_width = getVal('input_image_width', 1200);
+        state.params.count = Math.max(3, getVal('input_count', 6));
+        state.params.img_width = getVal('input_image_width', 2400); 
         state.params.index = getVal('input_index', 50);
         state.params.span = getVal('input_span', 20);
         state.params.xjitter = getVal('input_xjitter', 0);
         state.params.yjitter = getVal('input_yjitter', 0);
         state.params.zjitter = getVal('input_zjitter', 0);
         
-        // Mode Logic
         const setDisp = (id, mode) => { const el = document.getElementById(id); if(el) el.style.display = mode; };
         const setDisabled = (id, disabled) => {
             const el = document.getElementById(id);
@@ -233,19 +239,14 @@ window.Workflow = (function() {
         };
 
         if(state.params.anchor === 'fit') {
-            setDisp('row_stitch_width', 'flex');
-            setDisp('row_image_width', 'none');
             setDisabled('row_index', true);
             setDisabled('row_span', true);
         } else {
-            setDisp('row_stitch_width', 'none');
-            setDisp('row_image_width', 'flex');
             setDisabled('row_index', false);
             setDisabled('row_span', false);
         }
         setDisp('row_direction', (state.params.zjitter > 0) ? 'flex' : 'none');
 
-        // Radical Visuals
         const checkRad = (id, val, limit) => {
             const el = document.getElementById(id);
             if(el) {
@@ -253,23 +254,19 @@ window.Workflow = (function() {
                 else el.classList.remove('radical-active');
             }
         };
-        checkRad('input_width', state.params.width, LIMITS.organic.width);
         checkRad('input_xjitter', state.params.xjitter, LIMITS.organic.x);
         checkRad('input_yjitter', state.params.yjitter, LIMITS.organic.y);
         checkRad('input_zjitter', state.params.zjitter, LIMITS.organic.z);
 
-        // Update Labels Immediately (Feedback #1)
         updateLabels();
         updateCalculations();
         
         if(!skipRender) queueRender();
     }
 
-    // New Function to force label updates
     function updateLabels() {
         const setTxt = (id, val) => { const el = document.getElementById(id); if(el) el.innerText = val; };
         setTxt('val_cnt', state.params.count);
-        setTxt('val_wid', state.params.width);
         setTxt('val_img_wid', state.params.img_width);
         setTxt('val_x', state.params.xjitter);
         setTxt('val_y', state.params.yjitter);
@@ -293,13 +290,43 @@ window.Workflow = (function() {
         const elIdx = document.getElementById('val_idx');
         if(elIdx) elIdx.innerText = labelStart.toFixed(1) + "s";
         
-        let estW = (state.params.anchor === 'fit') ? (state.params.count * state.params.width) : state.params.img_width;
+        const estW = state.params.img_width;
         
         const bpmDisp = document.getElementById('bpm-display');
         if(bpmDisp) {
             bpmDisp.innerText = estW + " PX";
-            if(estW > 2200) bpmDisp.classList.add('danger');
+            if(estW > 3000) bpmDisp.classList.add('danger');
             else bpmDisp.classList.remove('danger');
+        }
+    }
+
+    // --- DARKROOM PARAMETERS ---
+    function setDarkroomParam(key, val) {
+        // Update State
+        state.darkroom[key] = val;
+
+        // Update Label (if slider)
+        const labelId = `val_dr_${key}`;
+        const label = document.getElementById(labelId);
+        if(label) label.innerText = val;
+
+        // Update Buttons (if toggle group)
+        if(key === 'gap_fill') {
+            const grp = document.getElementById('grp_gap_fill');
+            if(grp) {
+                grp.querySelectorAll('.mini-btn').forEach(b => {
+                    if(b.dataset.val === val) b.classList.add('active');
+                    else b.classList.remove('active');
+                });
+            }
+        }
+        
+        // Log for Debug
+        // logKernel(`DR Param: ${key} = ${val}`);
+        
+        // Note: Actual rendering logic will be hooked up later
+        if(window.Artist && window.Artist.updateParam) {
+            window.Artist.updateParam(key, val);
         }
     }
 
@@ -316,10 +343,8 @@ window.Workflow = (function() {
     }
 
     function expressToDarkroom() {
-        // 1. Download
         exportRawStrip();
-        // 2. Move to Darkroom
-        goToDarkroom();
+        enterDarkroomMode(); 
     }
 
     // --- RENDER LOGIC ---
@@ -370,15 +395,12 @@ window.Workflow = (function() {
         const overlay = document.getElementById('overlay');
         if(overlay) overlay.classList.add('weaving');
 
-        let finalWidth = state.params.width;
-        if(state.params.anchor === 'focus') {
-            finalWidth = Math.max(1, Math.floor(state.params.img_width / state.params.count));
-        }
+        const calculatedSliceWidth = Math.max(1, Math.floor(state.params.img_width / state.params.count));
 
         const payload = {
             path: state.sourcePath, 
             count: state.params.count,
-            width: finalWidth,
+            width: calculatedSliceWidth, 
             index: state.params.index,
             span: state.params.span,
             xjitter: state.params.xjitter,
@@ -406,6 +428,9 @@ window.Workflow = (function() {
             const data = await res.json();
             
             if(data.status === 'success') {
+                state.currentRenderUrl = data.image_url;
+                state.currentStitchMap = data.stitch_map; 
+
                 const img = document.getElementById('preview_img');
                 if(img) {
                     img.onload = () => {
@@ -416,7 +441,6 @@ window.Workflow = (function() {
                     };
                     img.src = data.image_url + "?t=" + Date.now();
                 }
-                // Pre-load data for Darkroom if Artist exists
                 if(window.Artist) window.Artist.loadData(data.image_url, data.stitch_map, data.width, data.height);
             } else {
                 console.error("RENDER ERROR:", data.error);
@@ -555,7 +579,7 @@ window.Workflow = (function() {
         if(finalLeft > maxLeft) finalLeft = maxLeft;
 
         lens.style.left = finalLeft + "px";
-        const offsetTop = (stage.clientHeight - img.clientHeight) / 2;
+        const offsetTop = img.offsetTop; 
         lens.style.top = offsetTop + "px";
     }
 
@@ -607,10 +631,15 @@ window.Workflow = (function() {
         const curLimits = state.radical ? LIMITS.radical : LIMITS.organic;
         const setMax = (id, val) => { const el = document.getElementById(id); if(el) el.max = val; };
         
-        setMax('input_width', curLimits.width);
         setMax('input_xjitter', curLimits.x);
         setMax('input_yjitter', curLimits.y);
         setMax('input_zjitter', curLimits.z);
+
+        const spanInp = document.getElementById('input_span');
+        if(spanInp) {
+            spanInp.step = state.radical ? "0.1" : "1";
+            spanInp.min = state.radical ? "0.1" : "1";
+        }
 
         const preState = JSON.stringify(state.params);
 
@@ -621,7 +650,6 @@ window.Workflow = (function() {
                      el.value = limit;
                  }
              };
-             clamp('input_width', LIMITS.organic.width);
              clamp('input_xjitter', LIMITS.organic.x);
              clamp('input_yjitter', LIMITS.organic.y);
              clamp('input_zjitter', LIMITS.organic.z);
@@ -651,12 +679,14 @@ window.Workflow = (function() {
         const el = document.getElementById('develop-modal'); if(el) el.style.display = 'flex'; 
     }
     
-    function goToDarkroom() { 
+    // --- MODE TOGGLE LOGIC ---
+    function enterDarkroomMode() {
         const el = document.getElementById('develop-modal');
         if(el) el.style.display = 'none';
-        switchScreen('screen-darkroom');
-        
-        // Wait for screen to render before Init to avoid "Canvas Element Not Found"
+        const screen = document.getElementById('screen-time-travel');
+        if(screen) screen.classList.add('mode-darkroom');
+        const title = document.getElementById('header_title');
+        if(title) title.innerText = "DARK ROOM";
         if(window.Artist) {
             setTimeout(() => {
                 window.Artist.init();
@@ -664,15 +694,47 @@ window.Workflow = (function() {
             }, 100);
         }
     }
+
+    function exitDarkroomMode() {
+        const screen = document.getElementById('screen-time-travel');
+        if(screen) screen.classList.remove('mode-darkroom');
+        const title = document.getElementById('header_title');
+        if(title) title.innerText = "TIME TRAVEL";
+    }
     
+    function goToDarkroom() { enterDarkroomMode(); }
+
     function exportRawStrip() {
         const img = document.getElementById('preview_img');
         if(img && img.src) {
             const a = document.createElement('a');
             a.href = img.src;
-            a.download = `BAAL_V21_RAW_${Date.now()}.png`; 
+            a.download = `BAAL_V22_RAW_${Date.now()}.png`; 
             a.click();
         }
+    }
+
+    // --- EXPORTS ---
+    function exportStitchMap() {
+        if(!state.currentStitchMap) {
+            alert("No stitch data available. Please wait for a render to complete.");
+            return;
+        }
+        const dataStr = "data:text/json;charset=utf-8," + encodeURIComponent(JSON.stringify(state.currentStitchMap));
+        const a = document.createElement('a');
+        a.href = dataStr;
+        a.download = `BAAL_V22_MAP_${Date.now()}.json`;
+        a.click();
+    }
+
+    function triggerDownload(btnId) {
+        if (!state.currentRenderUrl) return;
+        const a = document.createElement('a');
+        a.href = state.currentRenderUrl;
+        a.download = `render_${Date.now()}.png`;
+        document.body.appendChild(a);
+        a.click();
+        document.body.removeChild(a);
     }
 
     return {
@@ -685,7 +747,12 @@ window.Workflow = (function() {
         expressToDarkroom,
         openDevelopModal,
         goToDarkroom,
+        enterDarkroomMode, 
+        exitDarkroomMode,  
         exportRawStrip,
+        exportStitchMap, 
+        triggerDownload,
+        setDarkroomParam, // Exposed
         resetParams: () => { resetParams(); },
         goToIngest,
         closeModal: () => { const el = document.getElementById('info-modal'); if(el) el.style.display = 'none'; },
@@ -694,4 +761,4 @@ window.Workflow = (function() {
         exportPrint: () => window.Artist && window.Artist.exportCanvas && window.Artist.exportCanvas()
     };
 })();
-// END OF DOCUMENT js/ui/workflow.js [20251226-1845]
+// END OF DOCUMENT js/ui/workflow.js [20260111 1400]
