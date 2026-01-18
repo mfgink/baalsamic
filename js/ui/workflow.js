@@ -1,11 +1,14 @@
-// v22.15 - js/ui/workflow.js
+// js/ui/workflow.js v23.5
 /*
     WORKFLOW ENGINE
     - FEATURE: Darkroom UI Wiring (State & Events)
-    - UPDATE: Default Accordion Behavior (All Open)
+    - FEATURE: Smart Reset (Cache Flushing on Ingest)
+    - UPDATE: Image Width Default 4800px, Max 6000px
+    - FIX: Slider Initialization (Set Max BEFORE Value to prevent clamping)
+    - FEATURE: Debug Grid Toggle via 'G' Key
 */
 
-console.log("WORKFLOW: Loading V22.15...");
+console.log("WORKFLOW: Loading V23.5...");
 
 window.Workflow = (function() {
     
@@ -18,10 +21,12 @@ window.Workflow = (function() {
         interfaceLocked: false, 
         videoMeta: { duration: 0, fps: 30, width: 1920, height: 1080 },
         
+        debugGrid: false, 
+
         // Time Travel Params
         params: {
             count: 6, 
-            img_width: 2400, 
+            img_width: 4800, // V23.5 Default
             index: 50, span: 20,
             xjitter: 10, yjitter: 10, zjitter: 0,
             burst: 'soft', gap: 'close',
@@ -29,7 +34,7 @@ window.Workflow = (function() {
             res: '720', fps: '15'
         },
         
-        // Darkroom Params (New)
+        // Darkroom Params
         darkroom: {
             drift: 0, wave: 0, stretch: 0, gap_fill: 'void',
             heat: 0, flare: 0, flicker: 0,
@@ -51,13 +56,22 @@ window.Workflow = (function() {
     };
 
     const LIMITS = {
-        organic: { x: 100, y: 100, z: 8, width: 199 },
-        radical: { x: 300, y: 300, z: 180, width: 500 }
+        // V23.5: Set Width Limit to 6000 for both modes to ensure full range
+        organic: { x: 100, y: 100, z: 8, width: 6000 },
+        radical: { x: 300, y: 300, z: 180, width: 6000 }
     };
 
     const DEFAULTS = {
-        count: 6, img_width: 2400, index: 50, span: 20,
+        count: 6, 
+        img_width: 4800, // V23.5 Default
+        index: 50, span: 20,
         xjitter: 10, yjitter: 10, zjitter: 0
+    };
+    
+    const DEFAULT_DARKROOM = {
+        drift: 0, wave: 0, stretch: 0, gap_fill: 'void',
+        heat: 0, flare: 0, flicker: 0,
+        smooth: 0, crunch: 0, louver: 0
     };
 
     // --- KERNEL LOGGING ---
@@ -74,9 +88,19 @@ window.Workflow = (function() {
 
     // --- INIT ---
     function init() {
-        logKernel("Initializing V22.15 Interface...");
+        logKernel("Initializing V23.5 Interface...");
         setupListeners();
         
+        // KEYBOARD SHORTCUTS
+        window.addEventListener('keydown', (e) => {
+            // Press 'G' to toggle Grid
+            if(e.key.toLowerCase() === 'g') {
+                state.debugGrid = !state.debugGrid;
+                logKernel(`DEBUG GRID: ${state.debugGrid ? 'ON' : 'OFF'}`);
+                queueRender();
+            }
+        });
+
         window.addEventListener('resize', () => {
             updateLensDimensions();
             updateRuler(); 
@@ -86,6 +110,13 @@ window.Workflow = (function() {
             updateCoords(true); 
             setupLensDrag();
             toggleLock(false); 
+            
+            // V23.5: Force initial limits check
+            toggleRadicalMode();
+            // Restore radical state (toggle flips it, so we flip back if needed, 
+            // but here we just want to ensure limits are applied)
+            if(state.radical) { state.radical = false; toggleRadicalMode(); }
+
             logKernel("Subsystems Ready.");
         } catch(e) { 
             console.error("BOOT ERROR:", e); 
@@ -164,7 +195,21 @@ window.Workflow = (function() {
                 logKernel(`[Native] Duration: ${meta.duration.toFixed(2)}s | Res: ${meta.width}x${meta.height} | FPS: ${fpsDisp}`);
                 logKernel("Upload Complete. Server acknowledged 200 OK.");
 
-                resetParams(true); 
+                // --- SMART RESET TRIGGER ---
+                btn.innerText = "CLEANING...";
+                try {
+                    await fetch('/api/system/reset', {
+                        method: 'POST',
+                        headers: {'Content-Type': 'application/json'},
+                        body: JSON.stringify({ active_video: data.filename })
+                    });
+                    logKernel("Cache flushed successfully.");
+                } catch (err) {
+                    console.warn("Smart Reset Warning:", err);
+                }
+                
+                resetParams(true, true); 
+                
                 switchScreen('screen-time-travel');
                 queueRender();
             } else {
@@ -195,8 +240,33 @@ window.Workflow = (function() {
         }, 100);
     }
 
-    function resetParams(skipUpdate = false) {
+    function resetParams(skipUpdate = false, fullReset = false) {
         state.params = { ...state.params, ...DEFAULTS };
+        
+        // Reset Darkroom params on new file
+        if (fullReset) {
+            state.darkroom = { ...DEFAULT_DARKROOM };
+            for (const [k, v] of Object.entries(state.darkroom)) {
+                const label = document.getElementById(`val_dr_${k}`);
+                if(label) label.innerText = v;
+                if(k === 'gap_fill') {
+                     const grp = document.getElementById('grp_gap_fill');
+                     if(grp) {
+                        grp.querySelectorAll('.mini-btn').forEach(b => {
+                            if(b.dataset.val === v) b.classList.add('active');
+                            else b.classList.remove('active');
+                        });
+                     }
+                }
+            }
+        }
+
+        // V23.5 FIX: Set Limits BEFORE setting values
+        // This ensures the browser doesn't clamp 4800 down to 3800
+        const curLimits = state.radical ? LIMITS.radical : LIMITS.organic;
+        const widthInput = document.getElementById('input_image_width');
+        if(widthInput) widthInput.max = curLimits.width;
+
         const setVal = (id, v) => { const el = document.getElementById(id); if(el) el.value = v; };
         setVal('input_count', DEFAULTS.count);
         setVal('input_image_width', DEFAULTS.img_width);
@@ -220,7 +290,7 @@ window.Workflow = (function() {
         };
 
         state.params.count = Math.max(3, getVal('input_count', 6));
-        state.params.img_width = getVal('input_image_width', 2400); 
+        state.params.img_width = getVal('input_image_width', 4800); 
         state.params.index = getVal('input_index', 50);
         state.params.span = getVal('input_span', 20);
         state.params.xjitter = getVal('input_xjitter', 0);
@@ -279,7 +349,7 @@ window.Workflow = (function() {
         let labelSpan = dur;
 
         if(state.params.anchor !== 'fit') {
-            const spanSec = 1.0 + ((state.params.span / 100.0) * (dur - 1.0));
+            const spanSec = 0.1 + ((state.params.span / 100.0) * (dur - 0.1));
             const midTime = (state.params.index / 100.0) * dur;
             labelStart = midTime; 
             labelSpan = spanSec;
@@ -302,15 +372,12 @@ window.Workflow = (function() {
 
     // --- DARKROOM PARAMETERS ---
     function setDarkroomParam(key, val) {
-        // Update State
         state.darkroom[key] = val;
 
-        // Update Label (if slider)
         const labelId = `val_dr_${key}`;
         const label = document.getElementById(labelId);
         if(label) label.innerText = val;
 
-        // Update Buttons (if toggle group)
         if(key === 'gap_fill') {
             const grp = document.getElementById('grp_gap_fill');
             if(grp) {
@@ -320,11 +387,8 @@ window.Workflow = (function() {
                 });
             }
         }
-        
-        // Log for Debug
-        // logKernel(`DR Param: ${key} = ${val}`);
-        
-        // Note: Actual rendering logic will be hooked up later
+        queueRender();
+
         if(window.Artist && window.Artist.updateParam) {
             window.Artist.updateParam(key, val);
         }
@@ -409,7 +473,10 @@ window.Workflow = (function() {
             anchor: state.params.anchor, 
             burst: state.params.burst,
             gap: state.params.gap,
-            depth: state.params.depth
+            depth: state.params.depth,
+            darkroom: state.darkroom,
+            radical: state.radical,
+            debug_grid: state.debugGrid 
         };
 
         try {
@@ -499,7 +566,7 @@ window.Workflow = (function() {
             let tEnd = dur;
 
             if(state.params.anchor !== 'fit') {
-                const spanSec = 1.0 + ((state.params.span / 100.0) * (dur - 1.0));
+                const spanSec = 0.1 + ((state.params.span / 100.0) * (dur - 0.1));
                 const centerSec = (state.params.index / 100.0) * dur;
                 const halfSpan = spanSec / 2.0;
                 
@@ -634,6 +701,8 @@ window.Workflow = (function() {
         setMax('input_xjitter', curLimits.x);
         setMax('input_yjitter', curLimits.y);
         setMax('input_zjitter', curLimits.z);
+        // V23.5: Also update width limit when mode changes
+        setMax('input_image_width', curLimits.width);
 
         const spanInp = document.getElementById('input_span');
         if(spanInp) {
@@ -653,6 +722,7 @@ window.Workflow = (function() {
              clamp('input_xjitter', LIMITS.organic.x);
              clamp('input_yjitter', LIMITS.organic.y);
              clamp('input_zjitter', LIMITS.organic.z);
+             clamp('input_image_width', LIMITS.organic.width);
         }
         
         updateCoords(true); 
@@ -709,7 +779,7 @@ window.Workflow = (function() {
         if(img && img.src) {
             const a = document.createElement('a');
             a.href = img.src;
-            a.download = `BAAL_V22_RAW_${Date.now()}.png`; 
+            a.download = `BAAL_V23_RAW_${Date.now()}.png`; 
             a.click();
         }
     }
@@ -723,7 +793,7 @@ window.Workflow = (function() {
         const dataStr = "data:text/json;charset=utf-8," + encodeURIComponent(JSON.stringify(state.currentStitchMap));
         const a = document.createElement('a');
         a.href = dataStr;
-        a.download = `BAAL_V22_MAP_${Date.now()}.json`;
+        a.download = `BAAL_V23_MAP_${Date.now()}.json`;
         a.click();
     }
 
@@ -752,7 +822,7 @@ window.Workflow = (function() {
         exportRawStrip,
         exportStitchMap, 
         triggerDownload,
-        setDarkroomParam, // Exposed
+        setDarkroomParam, 
         resetParams: () => { resetParams(); },
         goToIngest,
         closeModal: () => { const el = document.getElementById('info-modal'); if(el) el.style.display = 'none'; },
@@ -761,4 +831,4 @@ window.Workflow = (function() {
         exportPrint: () => window.Artist && window.Artist.exportCanvas && window.Artist.exportCanvas()
     };
 })();
-// END OF DOCUMENT js/ui/workflow.js [20260111 1400]
+// END OF DOCUMENT js/ui/workflow.js [20260117 2109]
