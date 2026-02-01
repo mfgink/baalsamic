@@ -1,0 +1,1390 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,user-scalable=no" />
+    <title>BAAL Babel V19.17</title>
+
+<style>
+    /* --- BASE --- */
+    body { background: #0d0d0d; color: #ccc; font-family: monospace; padding: 0; margin: 0; height: 100vh; width: 100vw; overflow: hidden; position: fixed; }
+    h1 { color: #ff0055; letter-spacing: 2px; text-transform: uppercase; margin: 20px 0; font-size: 1.5em; text-align: center; }
+    
+    /* --- LAYOUT UTILS --- */
+    .container { max-width: 600px; margin: 0 auto; width: 100%; padding: 20px; box-sizing: border-box;}
+    
+    /* --- SCREEN: INGEST --- */
+    #screen-ingest { display: flex; flex-direction: column; height: 100%; overflow-y: auto; }
+    .config-panel { background: #1a1a1a; padding: 15px; border: 1px solid #333; border-radius: 8px; margin-bottom: 20px; text-align: left; }
+    .config-label { color: #ff0055; font-weight: bold; display: block; margin-bottom: 8px; font-size: 0.8em; text-transform: uppercase; }
+    .radio-group { display: flex; gap: 10px; margin-bottom: 15px; }
+    .radio-option { flex: 1; position: relative; }
+    .radio-option input { opacity: 0; position: absolute; width: 100%; height: 100%; cursor: pointer; }
+    .radio-tile { display: flex; align-items: center; justify-content: center; background: #222; border: 1px solid #444; padding: 12px; border-radius: 4px; transition: 0.2s; }
+    .radio-option input:checked + .radio-tile { background: #ff0055; color: white; border-color: #ff0055; }
+    
+    .warning-text { color: #ffaa00; font-size: 0.75em; margin-top: -10px; margin-bottom: 15px; display: none; }
+
+    /* FILE UPLOAD */
+    #upload { display: none; }
+    .btn-file { 
+        display: block; width: 100%; box-sizing: border-box;
+        background: #ff0055; color: white; 
+        padding: 15px; text-align: center; font-size: 1.2em; font-weight: bold; 
+        cursor: pointer; text-transform: uppercase; letter-spacing: 1px; border-radius: 4px; 
+        margin-bottom: 5px; transition: 0.2s;
+    }
+    .btn-file:hover { background: #d40045; }
+    .file-help { color: #666; font-size: 0.8em; margin-bottom: 20px; text-align: center;}
+
+    /* LOCK OPTION */
+    .lock-option { margin-top: 10px; text-align: center; font-size: 0.8em; color: #aaa; display: flex; justify-content: center; align-items: center; gap: 8px;}
+    .lock-option input { accent-color: #ff0055; width: 16px; height: 16px; cursor: pointer; }
+    .btn-action { width: 100%; background: #00ffcc; color: black; border: none; padding: 15px; font-size: 1.2em; font-weight: bold; cursor: pointer; text-transform: uppercase; letter-spacing: 1px; border-radius: 4px; }
+    
+    /* --- HEADER BUTTONS --- */
+    .header-buttons { 
+        display: flex; gap: 8px; align-items: center; height: 32px; flex: 1; 
+        justify-content: flex-end; min-width: 0; 
+    }
+    .btn-secondary { background: #333; color: #ccc; border: 1px solid #555; padding: 0 12px; height: 100%; cursor: pointer; border-radius: 4px; font-size: 0.75em; white-space: nowrap; font-weight: bold; display:flex; align-items:center;}
+    .btn-radical { background: #333; color: #ccc; border: 1px solid #555; padding: 0 12px; height: 100%; cursor: pointer; border-radius: 4px; font-size: 0.75em; white-space: nowrap; font-weight: bold; display:flex; align-items:center; }
+    .btn-radical.active { background: #ff0055; color: white; border-color: #ff0055; }
+
+    /* ACTION BAR (RENDER BUTTON) */
+    @keyframes pulse-orange { 0% { box-shadow: 0 0 2px #ffaa00; } 50% { box-shadow: 0 0 10px #ffaa00; } 100% { box-shadow: 0 0 2px #ffaa00; } }
+    @keyframes pulse-pink { 0% { box-shadow: 0 0 2px #ff0055; } 50% { box-shadow: 0 0 10px #ff0055; } 100% { box-shadow: 0 0 2px #ff0055; } }
+
+    .btn-render-small { 
+        background: #00ffcc; color: black; border: none; 
+        padding: 0 12px; height: 100%; cursor: pointer; border-radius: 4px; 
+        font-size: 0.75em; white-space: nowrap; font-weight: bold; 
+        text-transform: uppercase; min-width: 80px; 
+        display: flex; align-items: center; justify-content: center;
+        transition: background 0.2s ease, color 0.2s ease, flex-grow 0.3s ease;
+        flex-grow: 0; flex-shrink: 0; 
+    }
+    .btn-render-small.waiting { background: #ffaa00; color: black; flex-grow: 1; animation: pulse-orange 1.5s infinite; }
+    .btn-render-small.processing { background: #ff0055; color: white; flex-grow: 1; animation: pulse-pink 1.5s infinite; }
+
+    .btn-info {
+        width: 32px; height: 32px; border-radius: 50%;
+        background: #333; border: 1px solid #555; color: #00ffcc;
+        font-weight: bold; font-size: 0.8em; display: flex; align-items: center; justify-content: center;
+        cursor: pointer; font-family: serif; font-style: italic; flex-shrink: 0;
+    }
+
+    /* PIXEL COUNTER */
+    .pixel-display { 
+        font-size: 1.5em; color: #00ffcc; font-family: monospace; font-weight: bold;
+        height: 100%; display: flex; align-items: center; justify-content: flex-end;
+        min-width: 80px; margin-right: 5px; letter-spacing: -1px;
+        flex-shrink: 1; white-space: nowrap; overflow: hidden;
+    }
+    .pixel-display.danger { color: #ff0055; }
+
+    /* --- SCREEN: TIME TRAVEL --- */
+    #screen-time-travel { display: none; flex-direction: column; height: 100vh; width: 100vw; background: #000; }
+    .tuner-header { 
+        height: 60px; flex-shrink: 0; 
+        display: flex; justify-content: space-between; align-items: center; 
+        padding: 0 10px; background: #0d0d0d; border-bottom: 1px solid #333; z-index: 10; 
+    }
+    .tuner-header h2 { margin: 0; color: #ff0055; font-size: 1.0em; letter-spacing: 1px; display: none; } 
+    @media (min-width: 600px) { .tuner-header h2 { display: block; } }
+
+    .lightbox-wrapper { 
+        flex: 1; min-height: 0; margin: 10px 0; position: relative; 
+        display: flex; flex-direction: column; 
+        align-items: center; justify-content: center; 
+        overflow: hidden; width: 100%; background: #000; 
+    }
+    
+    /* RULER */
+    #timeline-ruler {
+        width: 0px; height: 24px; margin-bottom: 4px;
+        border-bottom: 2px solid #ff0055; display: flex;
+        justify-content: space-between; align-items: flex-end;
+        position: relative; flex-shrink: 0;
+    }
+    .ruler-label { 
+        font-size: 1.0em; color: #00ffcc; font-family: monospace; 
+        font-weight: bold; line-height: 1; padding-bottom: 2px;
+    }
+    .ruler-tick { position: absolute; bottom: 0; width: 2px; height: 8px; background: #ff0055; }
+    .tick-25 { left: 25%; }
+    .tick-50 { left: 50%; }
+    .tick-75 { left: 75%; }
+
+/* --- VIEWPORT ARCHITECTURE (v26.01) --- */
+    .stage-container { 
+        position: relative; 
+        display: flex; 
+        justify-content: center; 
+        align-items: center; 
+        width: 100%; 
+        height: 100%; 
+        overflow: hidden;
+    }
+
+    #main_canvas { 
+        max-width: 100%; 
+        max-height: 100%; 
+        width: auto; 
+        height: auto; 
+        object-fit: contain; 
+        display: block; 
+        pointer-events: none; 
+        z-index: 1;
+    }
+
+    /* THE GRID LAYER: Pinned to Center */
+    #grid_overlay {
+        position: absolute;
+        pointer-events: none; /* Clicks pass through to Lens */
+        z-index: 6; 
+        display: block;
+        /* Center in Flexbox stage */
+        margin: auto;
+        /* Match max-constraints of main_canvas */
+        max-width: 100%;
+        max-height: 100%;
+    }
+
+    #crop-lens { 
+        position: absolute; 
+        top: 0; 
+        height: 100%; 
+        border: 2px solid #ff0055; 
+        box-shadow: 0 0 0 9999px rgba(0, 0, 0, 0.85); 
+        cursor: grab; 
+        box-sizing: border-box; 
+        touch-action: none; 
+        z-index: 5; /* Sits between Canvas and Grid */
+    }
+
+    #debounce-timer {
+        position: absolute; 
+        bottom: 10px; 
+        right: 10px;
+        color: #00ffcc; 
+        font-family: monospace; 
+        font-size: 1.5em; 
+        font-weight: bold;
+        background: rgba(0,0,0,0.7); 
+        padding: 5px 10px; 
+        border-radius: 4px;
+        display: none; 
+        pointer-events: none; 
+        z-index: 50;
+    }
+    #crop-lens:active { cursor: grabbing; border-color: #fff; }
+
+    /* CONTROLS & LOCK */
+    .editor-controls { 
+        flex: 1; max-height: 45dvh; min-height: 250px; flex-shrink: 0; 
+        background: #111; border-top: 1px solid #333; border-bottom: 2px solid red; 
+        z-index: 20; display: flex; flex-direction: column; padding: 0; 
+        box-sizing: border-box; padding-bottom: env(safe-area-inset-bottom); transition: 0.3s;
+    }
+    .soft-locked { opacity: 0.8; }
+    .interface-locked { pointer-events: none; opacity: 0.5; filter: grayscale(100%); }
+    .controls-scroll { flex-grow: 1; overflow-y: auto; padding: 15px 0; padding-bottom: 80px; }
+
+    /* ACCORDIONS */
+    details { width: 100%; border-bottom: 1px solid #333; }
+    summary { 
+        background: #1a1a1a; color: #ccc; padding: 10px 15px; cursor: pointer; 
+        font-size: 0.8em; font-weight: bold; text-transform: uppercase; list-style: none; 
+        display: flex; justify-content: space-between; align-items: center;
+    }
+    summary::-webkit-details-marker { display: none; }
+    summary:after { content: "+"; color: #ff0055; font-weight: bold; font-size: 1.2em; }
+    details[open] summary { background: #222; color: #fff; }
+    details[open] summary:after { content: "-"; color: #00ffcc; }
+
+    .control-group { padding: 15px; background: #0d0d0d; }
+    .control-row { display: flex; gap: 10px; margin-bottom: 12px; align-items: center; position: relative;}
+    .control-row label { color: #00ffcc; font-size: 0.7em; width: 80px; flex-shrink: 0; text-transform: uppercase; letter-spacing: 1px; text-align:right; margin-right:5px;}
+    .control-row label.danger { color: #ffaa00; }
+
+    input[type=range] { flex: 1; accent-color: #00ffcc; cursor: pointer; }
+    
+    .mini-group { display: flex; gap: 4px; flex: 1; flex-wrap: wrap; }
+    .mini-btn { 
+        flex: 1; min-width: 30px; 
+        background: #1a1a1a; border: 1px solid #00ffcc; color: #00ffcc; 
+        padding: 8px 2px; font-size: 0.65em; cursor: pointer; 
+        border-radius: 4px; font-weight: bold; text-align: center;
+    }
+    .mini-btn.active { background: #ff0055; color: white; border-color: #ff0055; }
+    .mini-btn.disabled { border-color: #444; color: #555; cursor: not-allowed; opacity: 0.6; }
+    .mini-btn.active.danger { background: #ffaa00; border-color: #ffaa00; color: black; }
+
+    .coord-val { font-size: 0.8em; color: #fff; font-weight: bold; font-family: monospace; width: 45px; text-align: center; }
+    .coord-val.danger { color: #ffaa00; }
+
+    /* MIXING DESK STYLES */
+    .jitter-desk { display: flex; flex-direction: column; gap: 10px; }
+    .jitter-col { display: flex; align-items: center; gap: 10px; }
+    .jitter-col label { width: 60px; color: #00ffcc; font-size: 0.7em; font-weight: bold; }
+    .jitter-slider { flex: 1; }
+
+    #row_index, #row_span { display: none; opacity: 0.5; transition: 0.3s; }
+    #row_index.active, #row_span.active { display: flex; opacity: 1; }
+
+    /* --- MOBILE ROTARY CONTROLS (v19.17) --- */
+    .jog-wheel-wrapper { display: none; } 
+
+    @media (max-width: 600px) {
+        .jitter-desk {
+            flex-direction: row; justify-content: space-around;
+            height: 180px; background: #000; border: 1px solid #222;
+            border-radius: 6px; padding: 15px 5px; margin-bottom: 10px;
+        }
+        .jitter-col { flex-direction: column; height: 100%; width: 30%; gap: 5px; }
+        .jitter-slider {
+            writing-mode: vertical-lr; direction: rtl;
+            width: 40px; height: 100%; margin: 10px 0;
+        }
+        .desktop-label { display: none; }
+
+        /* JOG WHEEL ACTIVATION */
+        .wheel-enabled input[type=range] { display: none; }
+        .wheel-enabled .jog-wheel-wrapper { 
+            display: flex; position: relative; width: 64px; height: 64px; 
+            background: radial-gradient(circle, #1a1a1a 0%, #0d0d0d 100%);
+            border: 2px solid #333; border-radius: 50%;
+            justify-content: center; align-items: center; touch-action: none;
+            box-shadow: inset 0 0 10px #000;
+        }
+        .jog-indicator { 
+            position: absolute; top: 4px; width: 4px; height: 12px; 
+            background: #00ffcc; border-radius: 2px; transform-origin: 50% 28px; 
+        }
+        .jog-wheel-active { border-color: #00ffcc; box-shadow: 0 0 15px rgba(0, 255, 204, 0.3); }
+
+        .jog-tooltip {
+            position: fixed; top: 15%; left: 50%; transform: translateX(-50%);
+            background: rgba(0, 255, 204, 0.95); color: #000; padding: 15px 30px; 
+            font-size: 2.5em; font-weight: bold; border-radius: 10px;
+            display: none; z-index: 1000; pointer-events: none; box-shadow: 0 0 25px #000;
+        }
+    }
+
+    /* RADICAL THEME */
+    body.radical-mode .config-label,
+    body.radical-mode .control-row label,
+    body.radical-mode .jitter-col label { color: #ff0055 !important; }
+    body.radical-mode input[type=range] { accent-color: #ff0055 !important; }
+    body.radical-mode .mini-btn { border-color: #ff0055; color: #ff0055; }
+    body.radical-mode .mini-btn.active { background: #ff0055; color: #fff; }
+    body.radical-mode details[open] summary:after { color: #ff0055; }
+    body.radical-mode .jog-indicator { background: #ff0055 !important; }
+    body.radical-mode .jog-wheel-active { border-color: #ff0055 !important; }
+
+    /* OVERLAYS & MODALS */
+    #overlay { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.92); z-index: 999; display: flex; flex-direction: column; align-items: center; justify-content: center; color:#ff0055; backdrop-filter: blur(5px); }
+    .loader { border: 4px solid #333; border-top: 4px solid #ff0055; border-radius: 50%; width: 40px; height: 40px; animation: spin 1s linear infinite; margin-bottom: 15px; }
+    @keyframes spin { 0% { transform: rotate(0deg); } 100% { transform: rotate(360deg); } }
+    #overlay-text { font-family: monospace; font-size: 1.2em; color: #00ffcc; text-align: center; padding: 20px;}
+    
+    .dev-section { display: flex; flex-direction: column; gap: 10px; margin-top: 40px; border-top: 1px solid #333; padding-top: 20px; text-align: left; }
+    .arch-info { font-size: 0.8em; color: #666; margin-bottom: 10px; border-left: 2px solid #ff0055; padding-left: 10px;}
+    #debug-panel { background: #000; border: 1px solid #333; color: #0f0; font-family: 'Consolas', 'Monaco', monospace; font-size: 11px; padding: 10px; height: 100px; overflow-y: auto; border-radius: 4px; box-shadow: inset 0 0 10px #000; }
+    #debug_pre { white-space: pre-wrap; margin: 0; }
+
+    video, #hidden_canvas { position: fixed; top: -9999px; left: -9999px; opacity: 0; pointer-events: none; }
+
+    #info-modal {
+        display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%;
+        background: rgba(0,0,0,0.9); z-index: 9999;
+        align-items: center; justify-content: center;
+        backdrop-filter: blur(5px);
+    }
+    .modal-content {
+        background: #111; border: 1px solid #ff0055; padding: 25px;
+        max-width: 500px; width: 90%; max-height: 80vh; overflow-y: auto;
+        border-radius: 8px; box-shadow: 0 0 20px rgba(255, 0, 85, 0.2);
+    }
+    .modal-section { margin-bottom: 20px; }
+    .modal-title { color: #ff0055; font-size: 1.1em; border-bottom: 1px solid #333; padding-bottom: 5px; margin-bottom: 10px; text-transform: uppercase; letter-spacing: 1px; }
+    .modal-item { margin-bottom: 8px; color: #ccc; font-size: 0.9em; line-height: 1.4; }
+    .modal-item strong { color: #00ffcc; }
+    .close-modal { text-align: center; margin-top: 20px; color: #666; font-size: 0.8em; cursor: pointer; text-decoration: underline; }
+
+    .conflict-table { width: 100%; border-collapse: collapse; margin-top: 10px; font-size: 0.75em; color: #ccc; }
+    .conflict-table th { text-align: left; color: #00ffcc; padding: 8px 5px; border-bottom: 1px solid #333; text-transform: uppercase;}
+    .conflict-table td { padding: 10px 5px; border-bottom: 1px solid #222; vertical-align: top; line-height: 1.3; }
+    .conflict-table .warn { color: #ffaa00; font-weight: bold; }
+    .conflict-table strong { color: #fff; }
+
+</style>
+
+</head>
+<body>
+
+    <div id="overlay"><div class="loader"></div><div id="overlay-text">BOOTING SYSTEM...</div></div>
+
+    <div id="info-modal" onclick="document.getElementById('info-modal').style.display='none'">
+        <div class="modal-content" onclick="event.stopPropagation()">
+            <div class="modal-section">
+                <div class="modal-title">THE MEMORY (Timeline)</div>
+                <div class="modal-item"><strong>Index:</strong> The starting point in the video.</div>
+                <div class="modal-item"><strong>Span:</strong> The total amount of time you want to capture.</div>
+            </div>
+            <div class="modal-section">
+                <div class="modal-title">THE GEOMETRY (Space)</div>
+                <div class="modal-item"><strong>Stitches:</strong> How many slices to cut. (More = smoother image).</div>
+                <div class="modal-item"><strong>Width:</strong> How thick each slice is. (Wider = more content visible).</div>
+            </div>
+            <div class="modal-section">
+                <div class="modal-title">THE RHYTHM (Time)</div>
+                <div class="modal-item"><strong>Burst ("The Open Eye"):</strong> How long the camera records <em>during</em> a stitch.</div>
+                <div class="modal-item"><strong>Gap ("The Blink"):</strong> How much time disappears <em>between</em> stitches.</div>
+            </div>
+            <div class="modal-section">
+                <div class="modal-title">THE ENTROPY (Chaos)</div>
+                <div class="modal-item"><strong>Jitter ("The Footing"):</strong> How stable the camera's grip is on the timeline.</div>
+                <div class="modal-item"><em>Sure Footing:</em> A perfect, mechanical grid.</div>
+                <div class="modal-item"><em>Lost Footing:</em> The camera slips and shakes, creating organic distortion.</div>
+            </div>
+
+            <div class="modal-section">
+                <div class="modal-title">SYSTEM CONFLICT MATRIX</div>
+                <table class="conflict-table">
+                    <tr><th>PAIRS</th><th>CONFLICT & SYMPTOM</th></tr>
+                    <tr>
+                        <td><span class="warn">Stitch Count</span><br>vs Span</td>
+                        <td><strong>Time Density:</strong> Asking for more stitches than fit in the time window.<br><em>Symptom:</em> Engine prioritizes Index/Span. Gap becomes 0, rendering stops early.</td>
+                    </tr>
+                    <tr>
+                        <td><span class="warn">Count</span><br>vs Width</td>
+                        <td><strong>Pixel Overflow:</strong> High count x width > 6000px.<br><em>Symptom:</em> Browser crash. (Hard Capped).</td>
+                    </tr>
+                    <tr>
+                        <td>Burst<br>vs Gap</td>
+                        <td><strong>Rhythm Collision:</strong> Burst is longer than available time.<br><em>Symptom:</em> Playback head can't advance. Gap reduced to 0.</td>
+                    </tr>
+                    <tr>
+                        <td>X-Jitter<br>vs Width</td>
+                        <td><strong>Spatial Overlap:</strong> Jitter > Width.<br><em>Symptom:</em> Shredded image, black gaps. (Allowed).</td>
+                    </tr>
+                    <tr>
+                        <td>Z-Jitter<br>vs Index</td>
+                        <td><strong>Time Boundary:</strong> Jitter grabs frame before 0.0s.<br><em>Symptom:</em> Clamped to 0.0s or Duration.</td>
+                    </tr>
+                    <tr>
+                        <td>FPS<br>vs Smear</td>
+                        <td><strong>Data Scarcity:</strong> Low FPS + High Smear.<br><em>Symptom:</em> Choppy blur.</td>
+                    </tr>
+                </table>
+            </div>
+            <div class="close-modal" onclick="document.getElementById('info-modal').style.display='none'">CLOSE</div>
+        </div>
+    </div>
+
+    <div id="screen-ingest" class="container">
+        <h1>BAAL Babel V19.17</h1>
+        
+        <div class="config-panel">
+            <span class="config-label">Sampling Rate (FPS)</span>
+            <div class="radio-group" onchange="checkResolution()">
+                <div class="radio-option"><input type="radio" name="fps" value="15" checked><div class="radio-tile"><span>15</span></div></div>
+                <div class="radio-option"><input type="radio" name="fps" value="30"><div class="radio-tile"><span>30</span></div></div>
+                <div class="radio-option"><input type="radio" name="fps" value="60"><div class="radio-tile"><span>60</span></div></div>
+            </div>
+
+            <span class="config-label">Resolution</span>
+            <div class="radio-group" onchange="checkResolution()">
+                <div class="radio-option"><input type="radio" name="res" value="720" checked><div class="radio-tile"><span>SD</span></div></div>
+                <div class="radio-option"><input type="radio" name="res" value="1080"><div class="radio-tile"><span>HD</span></div></div>
+                <div class="radio-option"><input type="radio" name="res" value="0"><div class="radio-tile"><span>4K</span></div></div>
+            </div>
+            <div id="res-warning" class="warning-text">⚠ High resolutions may cause slowness or crashes with high stitch counts.</div>
+        </div>
+
+        <div class="upload-container">
+            <input type="file" id="upload" accept="video/*" onchange="updateFileLabel()">
+            <label for="upload" class="btn-file" id="file-label">LOAD A FILE</label>
+            <div class="file-help">Compatible: .mp4, .mov, .webm</div>
+            
+            <div class="lock-option">
+                <input type="checkbox" id="chk_lock">
+                <label for="chk_lock">Lock interface while rendering</label>
+            </div>
+            
+            <button class="btn-action" id="btn_stitch" style="margin-top:10px;">GET STITCHES</button>
+        </div>
+        
+        <div class="dev-section">
+            <div class="arch-info"><strong>V19.14 Updates:</strong><br>Ruler: Teal Text / Pink Line / Fixed Ticks.<br>Focus: Ruler reflects accurate slice time.<br>Engine: Stable Pyodide v0.24.1.</div>
+            <div id="debug-panel"><h4>KERNEL LOG</h4><pre id="debug_pre">Initializing...</pre></div>
+        </div>
+    </div>
+
+    <div id="screen-time-travel">
+        <div class="tuner-header">
+            <h2>TIME TRAVEL</h2>
+            <div class="header-buttons">
+                <span id="pixel_count" class="pixel-display">0px</span>
+                <button class="btn-info" onclick="document.getElementById('info-modal').style.display='flex'">i</button>
+                <button class="btn-radical" id="btn_radical" onclick="toggleRadicalMode()">!RAD</button>
+                <button class="btn-secondary" id="btn_reset">RESET</button>
+                <button class="btn-secondary" id="close_tuner">BACK</button>
+                <button class="btn-render-small" id="btn_render_final" onclick="handleRenderClick()">RENDER</button>
+            </div>
+        </div>
+        
+        <div class="lightbox-wrapper" id="lightbox_wrapper">
+            <div id="timeline-ruler">
+                <span id="ruler-start" class="ruler-label">0.0s</span>
+                <div class="ruler-tick tick-25"></div>
+                <div class="ruler-tick tick-50"></div>
+                <div class="ruler-tick tick-75"></div>
+                <span id="ruler-end" class="ruler-label">0.0s</span>
+            </div>
+            <div class="stage-container" id="stage_container">
+                <canvas id="main_canvas"></canvas>
+                <canvas id="grid_overlay"></canvas>
+                <div id="crop-lens"></div>
+                <div id="debounce-timer">1.5</div>
+            </div>
+        </div>
+
+        <div class="editor-controls">
+            <div class="controls-scroll">
+                
+                <details open>
+					<summary>MEMORY</summary>
+					<div class="control-group">
+						<div class="control-row">
+							<label>MODE</label>
+							<div class="mini-group anchor-group">
+								<button class="mini-btn active" onclick="setAnchor('fit', this)">FIT</button>
+								<button class="mini-btn" onclick="setAnchor('focus', this)">FOCUS</button>
+							</div>
+						</div>
+						
+						<div class="control-row" id="row_index">
+							<label>START IDX</label>
+							<input type="range" id="input_index" min="0" max="100" value="50" oninput="updateTimeLabels()" onchange="triggerUpdate()">
+							<span id="val_idx_time" class="coord-val" style="width:50px;">0.0s</span>
+						</div>
+						
+						<div class="control-row" id="row_span">
+							<label id="lbl_span">DURATION</label>
+							<input type="range" id="input_span" min="0" max="100" value="20" oninput="updateTimeLabels()" onchange="triggerUpdate()">
+							<span id="val_span_time" class="coord-val" style="width:80px;">20% (1.5s)</span>
+						</div>
+
+						<div class="control-row">
+							<label>STITCH CT</label>
+							<input type="range" id="input_count" min="1" max="60" value="8" oninput="updateCoords()" onchange="triggerUpdate()">
+							<span id="val_cnt" class="coord-val">8</span>
+						</div>
+
+						<div class="control-row">
+							<label>TOTAL PX</label> 
+							<input type="range" id="input_width" min="400" max="2400" value="1600" oninput="updateCoords()" onchange="triggerUpdate()">
+							<span id="val_wid" class="coord-val">1600</span>
+						</div>					
+					</div>
+				</details>
+				
+                <details open>
+                    <summary>JITTERS</summary>
+                    <div class="control-group">
+                        <div class="jitter-desk">
+                            <div class="jitter-col">
+                                <label>X JIT</label>
+                                <input type="range" id="input_xjitter" class="jitter-slider" min="0" max="100" value="0" oninput="updateCoords()" onchange="triggerUpdate()">
+                                <span id="val_x" class="coord-val">0</span>
+                            </div>
+                            <div class="jitter-col">
+                                <label>Y JIT</label>
+                                <input type="range" id="input_yjitter" class="jitter-slider" min="0" max="100" value="10" oninput="updateCoords()" onchange="triggerUpdate()">
+                                <span id="val_y" class="coord-val">0</span>
+                            </div>
+                            <div class="jitter-col">
+                                <label>Z JIT</label>
+                                <input type="range" id="input_zjitter" class="jitter-slider" min="0" max="8" value="1" oninput="updateCoords()" onchange="triggerUpdate()">
+                                <span id="val_z" class="coord-val">0</span>
+                            </div>
+                        </div>
+                    </div>
+                </details>
+				
+				<details open>
+					<summary>STAMMER</summary>
+					<div class="control-group">
+						<div class="jitter-desk">
+							<div class="jitter-col">
+								<label>LEAN</label>
+								<input type="range" id="input_lean" class="jitter-slider" min="-20" max="20" value="0" step="1" 
+									   oninput="updateStammerLabels()" onchange="triggerUpdate()">
+								<span id="val_lean" class="coord-val">0</span>
+							</div>
+							
+							<div class="jitter-col">
+								<label>FLICKER</label>
+								<input type="range" id="input_exposure" class="jitter-slider" min="0" max="50" value="0" step="1" 
+									   oninput="updateStammerLabels()" onchange="triggerUpdate()">
+								<span id="val_flicker" class="coord-val">0</span>
+							</div>
+							
+							<div class="jitter-col">
+								<label>SLIDE</label>
+								<input type="range" id="input_slide" class="jitter-slider" min="-500" max="500" value="0" step="5" 
+									   oninput="updateStammerLabels()" onchange="triggerUpdate()">
+								<span id="val_slide" class="coord-val">0</span>
+							</div>
+						</div>
+					</div>
+				</details>
+				
+                <details>
+                    <summary>RHYTHM</summary>
+                    <div class="control-group">
+                        <div class="control-row">
+                            <label>BURST</label>
+                            <div class="mini-group burst-group">
+                                <button class="mini-btn" onclick="setBurst('soft', this)">SOFT</button>
+                                <button class="mini-btn active" onclick="setBurst('med', this)">MID</button>
+                                <button class="mini-btn" onclick="setBurst('hard', this)">HARD</button>
+                                <button class="mini-btn" onclick="setBurst('mix', this)">MIX</button>
+                            </div>
+                        </div>
+						<div class="control-row">
+							<label>DIRECTION</label>
+							<div class="mini-group depth-group">
+								<button class="mini-btn active" onclick="setDepth('ltr', this)">L>R</button>
+								<button class="mini-btn" onclick="setDepth('rtl', this)">R>L</button>
+								<button class="mini-btn" onclick="setDepth('mix', this)">MIX</button>
+							</div>
+						</div>
+                    </div>
+                </details>
+
+
+
+                <details>
+                    <summary>CROP</summary>
+                    <div class="control-group">
+                        <div class="control-row">
+                            <label>RATIO</label>
+                            <div class="mini-group ratio-mini-group">
+                                <button class="mini-btn active" onclick="setRatio('max')">MAX</button>
+                                <button class="mini-btn" onclick="setRatio('1:1')">1:1</button>
+                                <button class="mini-btn" onclick="setRatio('4:5')">4:5</button>
+                                <button class="mini-btn" onclick="setRatio('16:9')">16:9</button>
+                            </div>
+                        </div>
+                        <div class="control-row" id="row_pos">
+                            <label>POS</label>
+                            <input type="range" id="input_pos" min="0" max="100" value="50" oninput="updateLensPositionFromSlider()">
+                        </div>
+                    </div>
+                </details>
+
+            </div>
+        </div>
+    </div>
+
+    <video id="hidden_video" muted playsinline></video>
+    <canvas id="hidden_canvas"></canvas>
+
+<script>
+    // --- GLOBAL STORE (BAAL Babel v19.17) ---
+    window.sourceFilename = "baalsamic_render";
+    window.currentRatio = 'max';
+    window.currentDepth = 'ltr';
+    window.currentAnchor = 'fit';
+    window.currentBurst = 'med';
+    window.isRadical = false;
+    window.renderState = 'idle';
+    window.useLock = false; 
+    window.jobIdCounter = 0; 
+
+    const RANGES = {
+        organic: { count: 60, z: 15, w: 2400 },
+        radical: { count: 200, z: 360, w: 3600 }
+    };
+    
+    let debounceTimer = null;
+    let countdownInterval = null;
+    const DEBOUNCE_DELAY = 1500; 
+
+    // --- JOG WHEEL STATE ---
+    let jogState = {
+        active: false,
+        targetInput: null,
+        targetIndicator: null,
+        startAngle: 0,
+        startVal: 0,
+        sensitivity: 0.5 // Adjust for spin speed
+    };
+
+    window.handleRenderClick = function() {
+        if (window.renderState === 'idle') {
+            window.saveImage();
+        } else if (window.renderState === 'waiting') {
+            cancelUpdate();
+        }
+    };
+
+    window.saveImage = function() {
+        const canvas = document.getElementById("main_canvas");
+        const lens = document.getElementById("crop-lens");
+        const scale = canvas.width / canvas.clientWidth; 
+        
+        let sourceX = 0;
+        let sourceW = canvas.width;
+        let sourceH = canvas.height;
+        
+        if (window.currentRatio !== 'max') {
+            const stage = document.getElementById('stage_container');
+            const visW = canvas.clientWidth;
+            const stageW = stage.clientWidth;
+            const canvasOffset = (stageW - visW) / 2; 
+            const lensLeft = parseFloat(lens.style.left || 0);
+            const lensWidth = parseFloat(lens.style.width || 0);
+            const relativeLensX = lensLeft - canvasOffset;
+            sourceX = relativeLensX * scale;
+            sourceW = lensWidth * scale;
+        }
+        
+        const temp = document.createElement('canvas');
+        temp.width = sourceW; temp.height = sourceH;
+        const ctx = temp.getContext('2d');
+        ctx.fillStyle = "black"; 
+        ctx.fillRect(0, 0, temp.width, temp.height);
+        ctx.drawImage(canvas, sourceX, 0, sourceW, sourceH, 0, 0, sourceW, sourceH);
+        
+        const count = document.getElementById("input_count").value;
+        const width = document.getElementById("input_width").value;
+        const burst = window.currentBurst;
+        const anchor = window.currentAnchor;
+        
+        const fps = document.querySelector('input[name="fps"]:checked').value;
+        const res = document.querySelector('input[name="res"]:checked').value;
+        const resLabel = (res == 0) ? "4K" : (res == 1080) ? "1080p" : "SD";
+        
+        const filename = `BAAL_${window.sourceFilename}_v19.17_${resLabel}-${fps}_${count}x${width}_b${burst}_${anchor}.png`;
+
+        const link = document.createElement('a');
+        link.download = filename;
+        link.href = temp.toDataURL();
+        link.click();
+        dbg("Image Exported: " + filename);
+    };
+
+    function updateFileLabel() {
+        const input = document.getElementById('upload');
+        const label = document.getElementById('file-label');
+        if (input.files.length > 0) {
+            window.sourceFilename = input.files[0].name.replace(/\.[^/.]+$/, "");
+            label.innerText = "READY: " + input.files[0].name.substring(0, 15) + "...";
+            label.style.background = "#00ffcc"; label.style.color = "black";
+        }
+    }
+
+    function checkResolution() {
+        const val = document.querySelector('input[name="res"]:checked').value;
+        const warn = document.getElementById('res-warning');
+        if (val === "0") warn.style.display = "block";
+        else warn.style.display = "none";
+        updateCoords(); 
+    }
+
+    function toggleRadicalMode() {
+        window.isRadical = !window.isRadical; 
+        const btn = document.getElementById('btn_radical');
+        const limits = window.isRadical ? RANGES.radical : RANGES.organic;
+        
+        const countInput = document.getElementById('input_count');
+        const widthInput = document.getElementById('input_width');
+        const zInput = document.getElementById('input_zjitter');
+        
+        countInput.max = limits.count;
+        widthInput.max = limits.w;
+        zInput.max = limits.z;
+        
+        if (window.isRadical) {
+            btn.classList.add('active');
+            document.body.classList.add('radical-mode');
+        } else {
+            btn.classList.remove('active');
+            document.body.classList.remove('radical-mode');
+            if (parseInt(countInput.value) > limits.count) countInput.value = limits.count;
+            if (parseInt(widthInput.value) > limits.w) widthInput.value = limits.w;
+            if (parseInt(zInput.value) > limits.z) zInput.value = limits.z;
+        }
+        
+        updateCoords();
+        triggerUpdate();
+    }
+
+    function updateCoords() {
+        const c = document.getElementById('input_count').value;
+        const totalW = document.getElementById('input_width').value; 
+        
+        document.getElementById('val_cnt').innerText = c;
+        document.getElementById('val_wid').innerText = totalW; 
+        
+        document.getElementById('val_x').innerText = document.getElementById('input_xjitter').value;
+        document.getElementById('val_y').innerText = document.getElementById('input_yjitter').value;
+        document.getElementById('val_z').innerText = document.getElementById('input_zjitter').value;
+
+        const estW = parseInt(totalW); 
+        const display = document.getElementById('pixel_count');
+        display.innerText = estW + "px";
+        
+        if (estW > 3200) {
+            display.classList.add('danger');
+        } else {
+            display.classList.remove('danger');
+            display.style.color = "#00ffcc";
+        }
+
+        updateTimeLabels();
+    }
+    
+    function updateTimeLabels() {
+        const vid = document.getElementById('hidden_video');
+        const dur = vid.duration || 0;
+        const idxVal = document.getElementById('input_index').value;
+        const timeVal = (idxVal / 100) * dur;
+        document.getElementById('val_idx_time').innerText = timeVal.toFixed(1) + "s";
+        
+        const spanVal = document.getElementById('input_span').value;
+        const spanSec = 1.0 + (spanVal / 100.0) * (dur - 1.0);
+        document.getElementById('val_span_time').innerText = spanVal + "% (" + spanSec.toFixed(1) + "s)";
+
+        const rulerStart = document.getElementById('ruler-start');
+        const rulerEnd = document.getElementById('ruler-end');
+        
+        if (window.currentAnchor === 'fit') {
+            rulerStart.innerText = "0.0s";
+            rulerEnd.innerText = dur.toFixed(1) + "s";
+        } else {
+            const center = dur * (idxVal / 100.0);
+            const halfSpan = spanSec / 2.0;
+            let start = center - halfSpan;
+            let end = center + halfSpan;
+            
+            if (start < 0) { end += (0 - start); start = 0; }
+            if (end > dur) { start -= (end - dur); end = dur; if (start < 0) start = 0; }
+            
+            rulerStart.innerText = start.toFixed(1) + "s";
+            rulerEnd.innerText = end.toFixed(1) + "s";
+        }
+    }
+    
+    function calculateGoldenStart() {
+        document.getElementById('input_count').value = 8;
+        document.getElementById('input_width').value = 1600;
+        document.getElementById('input_xjitter').value = 30;
+        document.getElementById('input_yjitter').value = 10;
+        document.getElementById('input_zjitter').value = 1;
+        
+        window.currentDepth = 'ltr';
+        window.currentAnchor = 'fit';
+        window.currentBurst = 'med';
+        window.isRadical = false;  
+
+        const depthBtns = document.querySelectorAll('.depth-group .mini-btn');
+        if(depthBtns.length > 0) setDepth('ltr', depthBtns[0]); 
+
+        const anchorBtns = document.querySelectorAll('.anchor-group .mini-btn');
+        if(anchorBtns.length > 0) setAnchor('fit', anchorBtns[0]); 
+
+        const burstBtns = document.querySelectorAll('.burst-group .mini-btn');
+        if(burstBtns.length > 1) setBurst('med', burstBtns[1]); 
+        
+        document.getElementById('btn_radical').classList.remove('active');
+        document.body.classList.remove('radical-mode');
+
+        updateCoords();
+    }
+
+    function setRatio(r) {
+        window.currentRatio = r;
+        const group = document.querySelector('.ratio-mini-group');
+        group.querySelectorAll('.mini-btn').forEach(b => {
+            if(b.innerText.toLowerCase() === r.toLowerCase() || (r === 'max' && b.innerText === 'MAX')) b.classList.add('active');
+            else b.classList.remove('active');
+        });
+        const posRow = document.getElementById('row_pos');
+        if (r === 'max') { posRow.style.opacity = '0.3'; posRow.style.pointerEvents = 'none'; } 
+        else { posRow.style.opacity = '1'; posRow.style.pointerEvents = 'auto'; }
+        updateLensDimensions();
+    }
+
+    function setDepth(val, btn) {
+        window.currentDepth = val;
+        document.querySelector('.depth-group').querySelectorAll('.mini-btn').forEach(b => b.classList.remove('active'));
+        if(btn) btn.classList.add('active');
+        triggerUpdate();
+    }
+
+    function setAnchor(val, btn) {
+        window.currentAnchor = val;
+        document.querySelector('.anchor-group').querySelectorAll('.mini-btn').forEach(b => b.classList.remove('active'));
+        if(btn) btn.classList.add('active');
+        const rowIndex = document.getElementById('row_index');
+        const rowSpan = document.getElementById('row_span');
+        if (val === 'focus') { 
+            rowIndex.classList.add('active'); rowSpan.classList.add('active'); 
+        } else { 
+            rowIndex.classList.remove('active'); rowSpan.classList.remove('active'); 
+            triggerUpdate(); 
+        }
+        updateTimeLabels();
+    }
+
+    function setBurst(val, btn) {
+        window.currentBurst = val;
+        document.querySelector('.burst-group').querySelectorAll('.mini-btn').forEach(b => b.classList.remove('active'));
+        if(btn) btn.classList.add('active');
+        triggerUpdate();
+    }
+
+	function updateStammerLabels() {
+		document.getElementById('val_lean').innerText = document.getElementById('input_lean').value;
+		document.getElementById('val_flicker').innerText = document.getElementById('input_exposure').value;
+		document.getElementById('val_slide').innerText = document.getElementById('input_slide').value;
+	}
+
+    function updateLensDimensions() {
+        const canvas = document.getElementById('main_canvas');
+        const lens = document.getElementById('crop-lens');
+        const ruler = document.getElementById('timeline-ruler');
+        if (!canvas) return;
+        ruler.style.width = canvas.clientWidth + "px";
+        const vid = document.getElementById('hidden_video');
+        if(vid && vid.duration && window.currentAnchor === 'fit') {
+           document.getElementById('ruler-end').innerText = vid.duration.toFixed(1) + "s";
+        }
+        if (window.currentRatio === 'max') { lens.style.display = 'none'; return; }
+        lens.style.display = 'block';
+        const visH = canvas.clientHeight;
+        const visW = canvas.clientWidth;
+        let targetW = visW;
+        if (window.currentRatio === '1:1') targetW = visH; 
+        if (window.currentRatio === '4:5') targetW = visH * (4/5);
+        if (window.currentRatio === '16:9') targetW = visH * (16/9); 
+        if (window.currentRatio === '9:16') targetW = visH * (9/16);
+        if(targetW > visW) targetW = visW;
+        lens.style.width = targetW + "px";
+        lens.style.height = visH + "px";
+        lens.style.top = canvas.offsetTop + "px"; 
+        const range = visW - targetW; 
+        const left = range / 2;
+        const stage = document.getElementById('stage_container');
+        lens.style.left = ((stage.clientWidth - visW) / 2 + left) + "px";
+        document.getElementById('input_pos').value = 50;
+    }
+
+    function updateLensPositionFromSlider() {
+        if (window.currentRatio === 'max') return;
+        const lens = document.getElementById('crop-lens');
+        const slider = document.getElementById('input_pos');
+        const canvas = document.getElementById('main_canvas');
+        const stage = document.getElementById('stage_container');
+        const visW = canvas.clientWidth;
+        const canvasOffset = (stage.clientWidth - visW) / 2;
+        const maxLensTravel = visW - parseFloat(lens.style.width);
+        const relativeLeft = (slider.value / 100) * maxLensTravel;
+        lens.style.left = (canvasOffset + relativeLeft) + "px";
+    }
+    
+    // --- JOG WHEEL LOGIC (v19.17) ---
+    function initJogWheels() {
+        const wheels = document.querySelectorAll('.jog-wheel-wrapper');
+        const tooltip = document.createElement('div');
+        tooltip.className = 'jog-tooltip';
+        document.body.appendChild(tooltip);
+
+        wheels.forEach(wheel => {
+            wheel.addEventListener('touchstart', (e) => handleJogStart(e, wheel, tooltip), {passive: false});
+        });
+
+        window.addEventListener('touchmove', (e) => handleJogMove(e, tooltip), {passive: false});
+        window.addEventListener('touchend', () => handleJogEnd(tooltip));
+    }
+
+    function handleJogStart(e, wheel, tooltip) {
+        const row = wheel.closest('.control-row');
+        const input = row.querySelector('input[type=range]');
+        const indicator = wheel.querySelector('.jog-indicator');
+        
+        jogState.active = true;
+        jogState.targetInput = input;
+        jogState.targetIndicator = indicator;
+        jogState.startVal = parseFloat(input.value);
+        
+        const rect = wheel.getBoundingClientRect();
+        const center = { x: rect.left + rect.width / 2, y: rect.top + rect.height / 2 };
+        jogState.startAngle = Math.atan2(e.touches[0].clientY - center.y, e.touches[0].clientX - center.x);
+        
+        wheel.classList.add('jog-wheel-active');
+        tooltip.style.display = 'block';
+        tooltip.innerText = input.value;
+    }
+
+    function handleJogMove(e, tooltip) {
+        if (!jogState.active) return;
+        e.preventDefault();
+
+        const rect = jogState.targetIndicator.parentElement.getBoundingClientRect();
+        const center = { x: rect.left + rect.width / 2, y: rect.top + rect.height / 2 };
+        const currentAngle = Math.atan2(e.touches[0].clientY - center.y, e.touches[0].clientX - center.x);
+        
+        let delta = (currentAngle - jogState.startAngle);
+        // Handle wrap-around
+        if (delta > Math.PI) delta -= 2 * Math.PI;
+        if (delta < -Math.PI) delta += 2 * Math.PI;
+
+        const range = parseFloat(jogState.targetInput.max) - parseFloat(jogState.targetInput.min);
+        const change = (delta / (Math.PI * 2)) * range * 2; // Full spin = half range
+        
+        let newVal = jogState.startVal + change;
+        newVal = Math.max(parseFloat(jogState.targetInput.min), Math.min(parseFloat(jogState.targetInput.max), newVal));
+        
+        jogState.targetInput.value = Math.round(newVal);
+        jogState.targetIndicator.style.transform = `rotate(${currentAngle * (180/Math.PI) + 90}deg)`;
+        
+        tooltip.innerText = jogState.targetInput.value;
+        updateCoords();
+    }
+
+    function handleJogEnd(tooltip) {
+        if (!jogState.active) return;
+        document.querySelectorAll('.jog-wheel-wrapper').forEach(w => w.classList.remove('jog-wheel-active'));
+        jogState.active = false;
+        tooltip.style.display = 'none';
+        triggerUpdate();
+    }
+
+    // --- LENS DRAG LOGIC ---
+    const lens = document.getElementById('crop-lens');
+    let isDragging = false;
+    let startX = 0; let startLeft = 0;
+    function startDrag(e) { if(window.currentRatio === 'max') return; isDragging = true; startX = (e.touches ? e.touches[0].clientX : e.clientX); startLeft = parseFloat(lens.style.left) || 0; lens.style.cursor = 'grabbing'; }
+    function doDrag(e) { if(!isDragging) return; e.preventDefault(); const clientX = (e.touches ? e.touches[0].clientX : e.clientX); const delta = clientX - startX; const canvas = document.getElementById('main_canvas'); const stage = document.getElementById('stage_container'); const visW = canvas.clientWidth; const canvasOffset = (stage.clientWidth - visW) / 2; const minX = canvasOffset; const maxX = minX + (visW - parseFloat(lens.style.width)); let newLeft = startLeft + delta; if(newLeft < minX) newLeft = minX; if(newLeft > maxX) newLeft = maxX; lens.style.left = newLeft + "px"; const range = maxX - minX; if(range > 0) { document.getElementById('input_pos').value = ((newLeft - minX) / range) * 100; } }
+    function stopDrag() { isDragging = false; lens.style.cursor = 'grab'; }
+    lens.addEventListener('mousedown', startDrag); lens.addEventListener('touchstart', startDrag);
+    window.addEventListener('mousemove', doDrag); window.addEventListener('touchmove', doDrag, {passive: false});
+    window.addEventListener('mouseup', stopDrag); window.addEventListener('touchend', stopDrag);
+
+// --- UI GRID ENGINE (v26.01) ---
+    function drawUIGrid() {
+        const main = document.getElementById('main_canvas');
+        const overlay = document.getElementById('grid_overlay');
+        if (!main || !overlay || main.width === 0) return;
+
+        // 1. Sync Resolution: Match internal pixels to the main render
+        overlay.width = main.width;
+        overlay.height = main.height;
+
+        // 2. Sync Display: Match visible CSS size (Flexbox centering)
+        overlay.style.width = main.clientWidth + "px";
+        overlay.style.height = main.clientHeight + "px";
+
+        const ctx = overlay.getContext('2d');
+        const w = overlay.width;
+        const h = overlay.height;
+
+        ctx.clearRect(0, 0, w, h);
+        
+        // Style: Dashed lines from v26 Master Catalog
+        ctx.setLineDash([8, 8]); 
+        ctx.lineWidth = Math.max(1, w / 1000); 
+
+        // DRAW CENTER AXES (TEAL #00ffcc)
+        ctx.strokeStyle = '#00ffcc';
+        ctx.beginPath();
+        ctx.moveTo(w / 2, 0); ctx.lineTo(w / 2, h); // Vertical
+        ctx.moveTo(0, h / 2); ctx.lineTo(w, h / 2); // Horizontal
+        ctx.stroke();
+
+        // DRAW FRAME DIAGONALS (PINK #ff0055)
+        ctx.strokeStyle = '#ff0055';
+        ctx.beginPath();
+        ctx.moveTo(0, 0); ctx.lineTo(w, h); // Top-Left to Bottom-Right
+        ctx.moveTo(w, 0); ctx.lineTo(0, h); // Top-Right to Bottom-Left
+        ctx.stroke();
+    }
+
+// --- RENDER LIFECYCLE (v26.01 COMPLETE BRIDGE) ---
+    function triggerUpdate() { 
+        if (debounceTimer) clearTimeout(debounceTimer);
+        if (countdownInterval) clearInterval(countdownInterval);
+        
+        window.renderState = 'waiting';
+        window.useLock = document.getElementById('chk_lock').checked;
+        window.jobIdCounter++; 
+        
+        const btn = document.getElementById('btn_render_final');
+        const controls = document.querySelector('.editor-controls');
+        const timerDisplay = document.getElementById('debounce-timer');
+
+        if(window.useLock) controls.classList.add('soft-locked');
+        
+        btn.classList.add('waiting');
+        btn.classList.remove('processing');
+        
+        let timeLeft = DEBOUNCE_DELAY / 1000;
+        timerDisplay.style.display = 'block';
+        
+        countdownInterval = setInterval(() => {
+            timeLeft -= 0.1;
+            if (timeLeft <= 0) { 
+                timeLeft = 0; 
+                clearInterval(countdownInterval); 
+                timerDisplay.style.display = 'none'; 
+            }
+            if(window.renderState === 'waiting') { 
+                btn.innerText = `WAITING... ${timeLeft.toFixed(1)}s`; 
+                timerDisplay.innerText = timeLeft.toFixed(1); 
+            }
+        }, 100);
+
+        debounceTimer = setTimeout(() => {
+            // 1. SYNC ALL GLITCHES TO PYTHON KERNEL
+            // We capture the values here so last-second slider changes are included
+            window.input_lean_val = document.getElementById('input_lean')?.value || 0;
+            window.input_exposure_val = document.getElementById('input_exposure')?.value || 0;
+            window.input_slide_val = document.getElementById('input_slide')?.value || 0;
+            
+            // 2. THE DRIFT GUARD
+            // This ensures Python knows if the Y-JIT slider is actually active
+            window.input_yjitter_val = document.getElementById('input_yjitter')?.value || 0;
+
+            // 3. START WEAVING
+            startProcessingState();
+            window.call_py(`await update_preview(${window.jobIdCounter})`); 
+        }, DEBOUNCE_DELAY);
+    }
+
+    function cancelUpdate() {
+        if (debounceTimer) clearTimeout(debounceTimer);
+        if (countdownInterval) clearInterval(countdownInterval);
+        
+        window.renderState = 'idle';
+        window.jobIdCounter++;
+        
+        const btn = document.getElementById('btn_render_final');
+        document.querySelector('.editor-controls').classList.remove('soft-locked');
+        btn.classList.remove('waiting');
+        btn.innerText = "RENDER";
+        document.getElementById('debounce-timer').style.display = 'none';
+    }
+
+    function startProcessingState() {
+        window.renderState = 'processing';
+        const btn = document.getElementById('btn_render_final');
+        btn.classList.remove('waiting'); 
+        btn.classList.add('processing'); 
+        btn.innerText = "WEAVING...";
+        
+        if(window.useLock) { 
+            document.querySelector('.editor-controls').classList.add('interface-locked'); 
+            document.body.style.cursor = 'wait'; 
+        }
+    }
+    
+    window.unlockInterface = function(finishedJobId) {
+        // Guard: Prevent old/cancelled renders from unlocking the UI
+        if(finishedJobId && finishedJobId != window.jobIdCounter) return; 
+        
+        const controls = document.querySelector('.editor-controls');
+        controls.classList.remove('interface-locked'); 
+        controls.classList.remove('soft-locked');
+        document.body.style.cursor = 'default';
+        
+        const btn = document.getElementById('btn_render_final');
+        btn.classList.remove('processing'); 
+        btn.innerText = "RENDER";
+        window.renderState = 'idle';
+
+        // Redraw UI Grid to match the new canvas geometry
+        setTimeout(drawUIGrid, 50); 
+    };
+
+    // --- WINDOW RESIZE HANDLER (v26.01) ---
+    // Keeps the Lens and the UI Grid aligned during window/orientation changes
+    window.addEventListener('resize', () => { 
+        // Use a small timeout to let the browser finish its layout shift
+        setTimeout(() => {
+            if (typeof updateLensDimensions === 'function') updateLensDimensions();
+            if (typeof drawUIGrid === 'function') drawUIGrid(); 
+        }, 100); 
+    });
+
+    // --- PYODIDE BOOT ---
+    const PYODIDE_BASE = "https://cdn.jsdelivr.net/pyodide/v0.24.1/full/";
+    (function(){
+        dbg("Initializing Babel v19.17...");
+        const s = document.createElement("script");
+        s.src = PYODIDE_BASE + "pyodide.js";
+        s.onload = async () => {
+            try {
+                window.pyodide = await loadPyodide({indexURL: PYODIDE_BASE});
+                window.call_py = async function(expr){ return await pyodide.runPythonAsync(expr); };
+                await initializePython();
+            } catch(e){ dbg("INIT ERROR: " + e); }
+        };
+        document.head.appendChild(s);
+    })();
+
+    async function initializePython(){
+        const code = document.getElementById("inline_python").textContent;
+        await pyodide.runPythonAsync(code);
+        document.getElementById("btn_stitch").onclick = async () => {
+            document.getElementById("overlay").style.display = "flex";
+            await pyodide.runPythonAsync(`await ingest_video()`);
+        };
+        document.getElementById("close_tuner").onclick = async () => {
+            document.getElementById("screen-time-travel").style.display = "none";
+            document.getElementById("screen-ingest").style.display = "flex";
+        };
+        document.getElementById("btn_reset").onclick = async () => {
+            window.calculateGoldenStart();
+            window.triggerUpdate(); 
+        };
+        initJogWheels(); // ATTACH JOG LISTENERS
+        document.getElementById("overlay").style.display = "none";
+        dbg("System Ready [2026-01-24]");
+    }
+    function dbg(msg){ console.log(msg); const pre = document.getElementById("debug_pre"); if(pre) pre.textContent = (pre.textContent + "\n> " + msg).slice(-5000); }
+</script>
+
+    <script type="text/python" id="inline_python">
+from js import document, console, window
+import asyncio, random, math
+
+render_generation = 0
+
+async def await_seek(video_elem, target_time):
+    video_elem.currentTime = target_time
+    await asyncio.sleep(0.08) 
+    timeout = 20
+    while video_elem.seeking and timeout > 0:
+        await asyncio.sleep(0.05)
+        timeout -= 1
+
+def generate_jitter_bag(length, intensity):
+    if intensity == 0: return [0] * length
+    bag = [random.randint(-intensity, intensity) for _ in range(20)]
+    return [random.choice(bag) for _ in range(length)]
+    
+def generate_burst_map(length, mode):
+    modes = {'soft': 1, 'med': 3, 'hard': 10}
+    val = modes.get(mode, 1)
+    if mode == 'mix':
+        return [random.randint(1, 5) for _ in range(length)]
+    return [val for _ in range(length)]
+
+async def ingest_video(*args):
+    upload = document.getElementById("upload")
+    if not upload.files.length:
+        window.alert("Select a video first.")
+        document.getElementById("overlay").style.display = "none"
+        return
+    
+    file = upload.files.item(0)
+    url = window.URL.createObjectURL(file)
+    video = document.getElementById("hidden_video")
+    video.src = url
+
+    while not video.duration or math.isnan(video.duration):
+        await asyncio.sleep(0.1)
+    
+    video.currentTime = 0.0
+    await asyncio.sleep(0.1)
+
+    # Trigger JS defaults (8 stitches / 1600px)
+    window.calculateGoldenStart()
+    
+    document.getElementById("screen-ingest").style.display = "none"
+    document.getElementById("screen-time-travel").style.display = "flex"
+    
+    await update_preview(0)
+    window.setRatio('max') 
+    document.getElementById("overlay").style.display = "none"
+
+async def update_preview(my_job_id):
+    global render_generation
+    render_generation += 1
+    my_gen = render_generation
+
+    # 1. Pull Image Width Driver values
+    count = int(document.getElementById("input_count").value)
+    total_px = int(document.getElementById("input_width").value)
+    base_width = total_px / count # Calculated slice width
+
+    # 2. Pull Jitters
+    x_jit = int(document.getElementById("input_xjitter").value)
+    y_jit = int(document.getElementById("input_yjitter").value)
+    z_jit = int(document.getElementById("input_zjitter").value)
+    
+    anchor_mode = window.currentAnchor
+    index_pct = int(document.getElementById("input_index").value) / 100.0
+    video = document.getElementById("hidden_video")
+    span_slider = int(document.getElementById("input_span").value)
+    span_sec = 1.0 + (span_slider / 100.0) * (video.duration - 1.0)
+    
+    burst_mode = window.currentBurst
+    depth = window.currentDepth
+    res = int(document.querySelector('input[name="res"]:checked').value)
+    fps = int(document.querySelector('input[name="fps"]:checked').value)
+
+    # 3. WEAVE
+    await run_process(video, count, base_width, depth, anchor_mode, index_pct, span_sec, burst_mode, x_jit, y_jit, z_jit, res, "main_canvas", fps, my_gen, my_job_id) 
+    
+    if hasattr(window, 'updateLensDimensions'):
+        window.updateLensDimensions()
+    
+    await asyncio.sleep(0.5)
+    window.unlockInterface(my_job_id)
+
+async def run_process(video_elem, target_count, base_width, depth_mode, anchor_mode, index_pct, span_sec, burst_mode, x_jitter, y_jitter, z_jitter, target_height, canvas_id, target_fps, my_gen, my_job_id):
+    canvas = document.getElementById("hidden_canvas")
+    ctx = canvas.getContext("2d")
+    out_canvas = document.getElementById(canvas_id)
+    out_ctx = out_canvas.getContext("2d")
+    out_ctx.imageSmoothingEnabled = False
+    
+    scale = target_height / video_elem.videoHeight if target_height > 0 else 1.0
+    w, h = int(video_elem.videoWidth * scale), int(video_elem.videoHeight * scale)
+    canvas.width, canvas.height = w, h
+    
+    # Timing Logic
+    dur = video_elem.duration
+    start_time = max(0, (dur * index_pct) - (span_sec/2)) if anchor_mode == 'focus' else 0
+    available_time = span_sec if anchor_mode == 'focus' else dur
+    gap_time = (available_time / target_count) if target_count > 0 else 0
+    
+    # Canvas Sizing
+    jitter_buffer = (target_count * int(x_jitter * scale)) + 500
+    est_width = int((target_count * base_width) + jitter_buffer)
+    out_canvas.width = est_width
+    out_canvas.height = h
+    
+    burst_map = generate_burst_map(target_count, burst_mode)
+    x_vals = generate_jitter_bag(target_count + 10, int(x_jitter * scale))
+    y_vals = generate_jitter_bag(target_count + 10, int(y_jitter * scale))
+    
+    x_pos = 0.0
+    current_time = start_time
+    
+# --- v26.01 DYNAMIC STRUCTURAL ENGINE (FIXED GRID) ---
+    
+    # 1. FETCH DYNAMIC RESOLUTION
+    # This ensures that 2400px / 4 stitches always equals exactly 600px per stitch
+    try:
+        current_target_width = int(window.target_width_val) if hasattr(window, 'target_width_val') else 1600
+        base_width = current_target_width / target_count
+        
+        lean_val = float(window.input_lean_val) if hasattr(window, 'input_lean_val') else 0.0
+        exp_jitter = float(window.input_exposure_val) if hasattr(window, 'input_exposure_val') else 0.0
+        source_slide = float(window.input_slide_val) if hasattr(window, 'input_slide_val') else 0.0
+        y_jit_active = float(window.input_yjitter_val) if hasattr(window, 'input_yjitter_val') else 0.0
+    except:
+        base_width = 200.0
+        lean_val = exp_jitter = source_slide = y_jit_active = 0.0
+
+    # Ensure the buffer and output canvases are primed for the current resolution
+    canvas.width = w
+    canvas.height = h
+    out_canvas.height = h
+    out_canvas.width = current_target_width
+
+    for i in range(target_count):
+        if render_generation != my_gen: return 
+        if my_job_id != window.jobIdCounter: return
+
+        # 2. THE DYNAMIC GRID ANCHOR
+        # Recalculated every loop to prevent rounding drift
+        grid_anchor_x = i * base_width
+
+        # 3. CAPTURE LOGIC
+        seek_time = current_time
+        if seek_time > dur - 0.1: seek_time = dur - 0.1
+        if seek_time < 0: seek_time = 0
+        
+        try:
+            document.getElementById('btn_render_final').innerText = f"WEAVING {i+1}/{target_count}"
+        except: pass
+
+        my_burst = burst_map[i]
+        for b in range(my_burst):
+            await await_seek(video_elem, seek_time)
+            ctx.drawImage(video_elem, 0, 0, w, h)
+            seek_time += 0.033 
+        
+        # 4. GLITCH MATH & DRIFT GUARD
+        # Guard: Strict Zero check for Y-Jitter to prevent "Ghost Drift"
+        y_jitter_raw = y_vals[i] if (y_jit_active != 0 and i < len(y_vals)) else 0
+        
+        # LEAN: Cumulative vertical offset (0.0 if lean_val is 0)
+        y_lean = i * lean_val
+        y_final = y_jitter_raw + y_lean
+        
+        x_var = x_vals[i] if (i < len(x_vals)) else 0
+        dest_x = grid_anchor_x + x_var
+        this_slit = base_width
+
+        # SOURCE CENTERING: Fixed to ensure subjects are centered within the stitch
+        # Math: Center of video minus half the slit width plus the slide variance
+        source_x_anchor = ((w - this_slit) / 2) + source_slide
+
+        # 5. DIRECTIONAL STACKING
+        mode = "destination-over" if depth_mode == "ltr" else "source-over"
+        if depth_mode == "mix":
+            mode = "destination-over" if random.random() > 0.5 else "source-over"
+        
+        out_ctx.globalCompositeOperation = mode
+
+        # FLICKER: Hardware-accelerated brightness deltas
+        if exp_jitter > 0:
+            exposure_pct = 100 + random.uniform(-exp_jitter, exp_jitter)
+            out_ctx.filter = f"brightness({exposure_pct}%)"
+        else:
+            out_ctx.filter = "none"
+        
+        # 6. RENDER
+        angle = random.uniform(-z_jitter, z_jitter) if z_jitter > 0 else 0
+        
+        if angle == 0:
+            try:
+                out_ctx.drawImage(canvas, source_x_anchor, 0, this_slit, h, dest_x, y_final, this_slit, h)
+            except: pass
+        else:
+            rads = math.radians(angle)
+            out_ctx.save()
+            out_ctx.translate(dest_x + this_slit/2, h/2)
+            out_ctx.rotate(rads)
+            try:
+                out_ctx.drawImage(canvas, source_x_anchor, 0, this_slit, h, -this_slit/2, -h/2 + y_final, this_slit, h)
+            except: pass
+            out_ctx.restore()
+            
+        out_ctx.filter = "none"
+        current_time += gap_time
+
+    # 7. FINAL CLEANUP
+    if render_generation == my_gen and my_job_id == window.jobIdCounter:
+        # Fill background only behind jitters/shingling
+        out_ctx.globalCompositeOperation = "destination-over"
+        out_ctx.fillStyle = "black"
+        out_ctx.fillRect(0, 0, out_canvas.width, h)
+
+        document.getElementById('btn_render_final').innerText = "RENDER"
+        document.getElementById('pixel_count').innerText = f"{int(out_canvas.width)}px"
+    </script>
+</body>
+</html>
+// END OF DOCUMENT [20251220-2215]
